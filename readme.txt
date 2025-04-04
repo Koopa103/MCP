@@ -1,2 +1,2 @@
 Run this:
-mvn exec:java -Dexec.mainClass="McpClient"
+mvn exec:java -Dexec.mainClass="com.example.McpClient"

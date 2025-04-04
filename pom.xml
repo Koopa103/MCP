@@ -12,7 +12,11 @@
   
   <!-- If you need any libraries, add them inside <dependencies> -->
   <dependencies>
-    <!-- No external dependencies needed for this basic example. -->
+    <dependency>
+      <groupId>com.anthropic</groupId>
+      <artifactId>anthropic-java</artifactId>
+      <version>1.1.0</version>
+    </dependency>
   </dependencies>
   
   <build>
