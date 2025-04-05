@@ -60,8 +60,7 @@ public class McpServer {
                 }
 
                 // Integrate with a mock LLM
-                String response = MockLLM.processInput(line);
-                out.println(response);
+                MockLLM.processInput(line);
             }
 
             clientSocket.close();
