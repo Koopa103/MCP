@@ -1,0 +1,110 @@
+package com.example;
+
+
+import java.nio.file.Paths;
+import java.util.Map;
+import java.util.Scanner;
+
+import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.schema.McpSchema;
+import io.modelcontextprotocol.schema.McpSchema.CallToolRequest;
+import io.modelcontextprotocol.schema.McpSchema.CallToolResult;
+import io.modelcontextprotocol.schema.McpSchema.TextContent;
+import io.modelcontextprotocol.transport.McpTransport;
+import io.modelcontextprotocol.transport.stdio.ServerParameters;
+import io.modelcontextprotocol.transport.stdio.StdioClientTransport;
+
+public class McpClientExample {
+
+    public static void main(String[] args) {
+        // Path to the server JAR or main class
+        String serverPath = Paths.get("path/to/calculator-server.jar").toAbsolutePath().toString();
+        
+        // Create server parameters for launching the server process
+        ServerParameters params = ServerParameters.builder("java")
+                .args("-jar", serverPath)
+                .build();
+                
+        // Create stdio transport for communicating with the server
+        McpTransport transport = new StdioClientTransport(params);
+        
+        // Create and initialize the client
+        McpSyncClient client = McpClient.sync(transport)
+                .requestTimeout(java.time.Duration.ofSeconds(30))
+                .build();
+                
+        try {
+            // Initialize connection with the server
+            System.out.println("Connecting to MCP server...");
+            client.initialize();
+            
+            // List available tools
+            System.out.println("Available tools:");
+            McpSchema.ListToolsResult toolsResult = client.listTools();
+            toolsResult.tools().forEach(tool -> {
+                System.out.println("- " + tool.name() + ": " + tool.description());
+            });
+            
+            // Set up interactive session for calculator
+            Scanner scanner = new Scanner(System.in);
+            boolean running = true;
+            
+            while (running) {
+                System.out.println("\nEnter calculation (e.g., 'add 5 3') or 'exit' to quit:");
+                String input = scanner.nextLine().trim();
+                
+                if (input.equalsIgnoreCase("exit")) {
+                    running = false;
+                    continue;
+                }
+                
+                // Parse input
+                String[] parts = input.split("\\s+");
+                if (parts.length != 3) {
+                    System.out.println("Invalid input. Format: <operation> <number> <number>");
+                    continue;
+                }
+                
+                try {
+                    String operation = parts[0];
+                    double a = Double.parseDouble(parts[1]);
+                    double b = Double.parseDouble(parts[2]);
+                    
+                    // Call the calculator tool
+                    CallToolRequest request = CallToolRequest.builder()
+                            .name("calculator")
+                            .arguments(Map.of(
+                                "operation", operation,
+                                "a", a,
+                                "b", b
+                            ))
+                            .build();
+                            
+                    CallToolResult result = client.callTool(request);
+                    
+                    // Process and display the result
+                    if (result.isError()) {
+                        System.out.println("Error: " + ((TextContent) result.content().get(0)).text());
+                    } else {
+                        System.out.println("Result: " + ((TextContent) result.content().get(0)).text());
+                    }
+                    
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid numbers. Please enter valid numbers.");
+                } catch (Exception e) {
+                    System.out.println("Error: " + e.getMessage());
+                }
+            }
+            
+            scanner.close();
+            
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            // Close the client connection
+            client.closeGracefully();
+            System.out.println("Client disconnected.");
+        }
+    }
+}
