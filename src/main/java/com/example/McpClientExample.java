@@ -5,14 +5,15 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Scanner;
 
+import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.schema.McpSchema;
-import io.modelcontextprotocol.schema.McpSchema.CallToolRequest;
-import io.modelcontextprotocol.schema.McpSchema.CallToolResult;
-import io.modelcontextprotocol.schema.McpSchema.TextContent;
-import io.modelcontextprotocol.transport.McpTransport;
-import io.modelcontextprotocol.transport.stdio.ServerParameters;
-import io.modelcontextprotocol.transport.stdio.StdioClientTransport;
+import io.modelcontextprotocol.spec.McpClientTransport;
+import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import io.modelcontextprotocol.client.transport.ServerParameters;
+import io.modelcontextprotocol.client.transport.StdioClientTransport;
 
 public class McpClientExample {
 
@@ -26,7 +27,7 @@ public class McpClientExample {
                 .build();
                 
         // Create stdio transport for communicating with the server
-        McpTransport transport = new StdioClientTransport(params);
+        McpClientTransport transport = new StdioClientTransport(params);
         
         // Create and initialize the client
         McpSyncClient client = McpClient.sync(transport)
@@ -71,15 +72,13 @@ public class McpClientExample {
                     double b = Double.parseDouble(parts[2]);
                     
                     // Call the calculator tool
-                    CallToolRequest request = CallToolRequest.builder()
-                            .name("calculator")
-                            .arguments(Map.of(
+                    CallToolRequest request = new CallToolRequest("calculator",
+                            Map.of(
                                 "operation", operation,
                                 "a", a,
                                 "b", b
-                            ))
-                            .build();
-                            
+                            ));
+
                     CallToolResult result = client.callTool(request);
                     
                     // Process and display the result

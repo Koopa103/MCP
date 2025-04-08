@@ -23,9 +23,8 @@
       <artifactId>mcp</artifactId>
       <version>0.8.1</version>
     </dependency>
-  
   </dependencies>
-  
+
   <build>
     <plugins>
       <!-- Ensure the right Java version is used for compiling -->
@@ -35,8 +34,8 @@
         <version>3.14.0</version>
         <configuration>
           <!-- Adjust these to your desired Java version -->
-          <source>22</source>
-          <target>22</target>
+          <source>21</source>
+          <target>21</target>
         </configuration>
       </plugin>
       <!-- Optionally, include the exec plugin to run classes from Maven -->
