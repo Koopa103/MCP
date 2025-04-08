@@ -5,13 +5,16 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.modelcontextprotocol.schema.McpSchema;
-import io.modelcontextprotocol.schema.McpSchema.CallToolResult;
-import io.modelcontextprotocol.schema.McpSchema.TextContent;
+import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.ServerCapabilities;
-import io.modelcontextprotocol.transport.stdio.StdioServerTransportProvider;
+import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
+import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
+import io.modelcontextprotocol.spec.McpSchema.Tool;
+import io.modelcontextprotocol.server.McpServer;
+
 
 public class McpServerExample {
 
