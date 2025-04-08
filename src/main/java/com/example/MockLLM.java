@@ -1,11 +1,8 @@
 package com.example;
 
-import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
-import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.client.okhttp.AnthropicOkHttpClientAsync;
 import com.anthropic.models.messages.MessageCreateParams;
-import com.anthropic.models.messages.Model;
 
 /**
  * LLM integration using Anthropic's Claude API.
@@ -15,13 +12,20 @@ public class MockLLM {
     private static final long MAX_TOKENS = 1024;
     
     // AnthropicClient is thread-safe, so we can use a singleton
-    private static final AnthropicClient client;
-    
+    private static final AnthropicClientAsync client;
+
     static {
+        String apiKey = System.getenv("ANTHROPIC_API_KEY");
+        if (apiKey == null || apiKey.isEmpty()) {
+            System.err.println("ERROR: ANTHROPIC_API_KEY environment variable is not set");
+            System.exit(1);
+        }
         // Initialize the client using API key from environment variable
         // You can also pass the API key directly: new AnthropicOkHttpClient("your-api-key")
                 // Configures using the `ANTHROPIC_API_KEY` environment variable
-        client = AnthropicOkHttpClient.fromEnv();
+        client = AnthropicOkHttpClientAsync.builder()
+                .apiKey(apiKey)
+                .build();
     }
     
     /**
@@ -32,12 +36,9 @@ public class MockLLM {
      */
     public static void processInput(String input) {
         try {
-            // Configures using the `ANTHROPIC_API_KEY` environment variable
-        AnthropicClientAsync client = AnthropicOkHttpClientAsync.fromEnv();
-
         MessageCreateParams createParams = MessageCreateParams.builder()
-                .model(Model.CLAUDE_3_7_SONNET_LATEST)
-                .maxTokens(2048)
+                .model(DEFAULT_MODEL)
+                .maxTokens(MAX_TOKENS)
                 .addUserMessage(input)
                 .build();
 

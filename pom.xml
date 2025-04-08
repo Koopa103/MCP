@@ -15,7 +15,7 @@
     <dependency>
       <groupId>com.anthropic</groupId>
       <artifactId>anthropic-java</artifactId>
-      <version>1.1.0</version>
+      <version>0.8.0</version>
     </dependency>
   </dependencies>
   
@@ -25,18 +25,18 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.1</version>
+        <version>3.14.0</version>
         <configuration>
           <!-- Adjust these to your desired Java version -->
-          <source>17</source>
-          <target>17</target>
+          <source>22</source>
+          <target>22</target>
         </configuration>
       </plugin>
       <!-- Optionally, include the exec plugin to run classes from Maven -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>3.1.0</version>
+        <version>3.5.0</version>
       </plugin>
     </plugins>
   </build>
