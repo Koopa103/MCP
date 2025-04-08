@@ -27,7 +27,6 @@ public class McpClient {
             // Simple command loop
             Scanner scanner = new Scanner(System.in);
             String userInput;
-            System.out.println(System.getenv("ANTHROPIC_API_KEY"));
             while (true) {
                 System.out.print("[Client] Enter text: ");
                 userInput = scanner.nextLine();

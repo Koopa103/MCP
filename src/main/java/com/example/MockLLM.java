@@ -1,11 +1,8 @@
 package com.example;
 
-import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
-import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.client.okhttp.AnthropicOkHttpClientAsync;
 import com.anthropic.models.messages.MessageCreateParams;
-import com.anthropic.models.messages.Model;
 
 /**
  * LLM integration using Anthropic's Claude API.
@@ -40,8 +37,8 @@ public class MockLLM {
     public static void processInput(String input) {
         try {
         MessageCreateParams createParams = MessageCreateParams.builder()
-                .model(Model.CLAUDE_3_7_SONNET_LATEST)
-                .maxTokens(2048)
+                .model(DEFAULT_MODEL)
+                .maxTokens(MAX_TOKENS)
                 .addUserMessage(input)
                 .build();
 
