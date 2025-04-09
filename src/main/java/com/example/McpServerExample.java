@@ -11,16 +11,21 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
+import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
 import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import io.modelcontextprotocol.server.McpServer;
 
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+
+
+
 public class McpServerExample {
 
-    public static void main(String[] args) {
-        // Create a transport provider using stdio
-        StdioServerTransportProvider transportProvider = new StdioServerTransportProvider(new ObjectMapper());
+    public McpSyncServer mcpServer(HttpServletSseServerTransportProvider transportProvider) {
 
         // Define input schema for calculator tool
         String schema = """
@@ -110,5 +115,7 @@ public class McpServerExample {
             System.err.println("Shutting down server...");
             server.close();
         }));
+        return server;
+
     }
 }
