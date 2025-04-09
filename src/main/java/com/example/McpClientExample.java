@@ -5,29 +5,33 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Scanner;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.client.transport.ServerParameters;
+import io.modelcontextprotocol.client.transport.StdioClientTransport;
+import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
-import io.modelcontextprotocol.client.transport.ServerParameters;
-import io.modelcontextprotocol.client.transport.StdioClientTransport;
 
 public class McpClientExample {
 
     public static void main(String[] args) {
         // Path to the server JAR or main class
-        String serverPath = Paths.get("path/to/calculator-server.jar").toAbsolutePath().toString();
+        //String serverPath = Paths.get("/home/austin/CodeBukkit/CS375/MCP/src/main/java/com/example/McpServerExample.java").toAbsolutePath().toString();
         
         // Create server parameters for launching the server process
-        ServerParameters params = ServerParameters.builder("java")
-                .args("-jar", serverPath)
+        ServerParameters params = ServerParameters.builder("mvn exec:java")
+                .args("-Dexec.mainClass=\"com.example.McpServer\"")
                 .build();
                 
         // Create stdio transport for communicating with the server
         McpClientTransport transport = new StdioClientTransport(params);
+        HttpServletSseServerTransportProvider Mcp = new HttpServletSseServerTransportProvider(new ObjectMapper(), "/mcp/message");
         
         // Create and initialize the client
         McpSyncClient client = McpClient.sync(transport)
