@@ -5,6 +5,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Scanner;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -30,7 +31,7 @@ public class McpClientExample {
                 
         // Create stdio transport for communicating with the server
         McpClientTransport transport = new StdioClientTransport(params);
-        Mcp= new HttpServletSseServerTransportProvider(new ObjectMapper(), "/mcp/message");
+        HttpServletSseServerTransportProvider Mcp = new HttpServletSseServerTransportProvider(new ObjectMapper(), "/mcp/message");
         
         // Create and initialize the client
         McpSyncClient client = McpClient.sync(transport)

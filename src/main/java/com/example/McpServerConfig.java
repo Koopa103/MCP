@@ -1,21 +1,25 @@
+package com.example;
 
 
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 
-public class McpServerConfig implements Http {
 
+@Configuration
+@EnableWebMvc
+public class McpServerConfig implements WebMvcConfigurer {
+    
     @Bean
     public HttpServletSseServerTransportProvider servletSseServerTransportProvider() {
         return new HttpServletSseServerTransportProvider(new ObjectMapper(), "/mcp/message");
     }
-
+    
     @Bean
     public ServletRegistrationBean customServletBean(HttpServletSseServerTransportProvider transportProvider) {
         return new ServletRegistrationBean(transportProvider);
