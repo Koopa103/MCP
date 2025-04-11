@@ -2,7 +2,11 @@ package com.example;
 
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.client.okhttp.AnthropicOkHttpClientAsync;
+import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
+import com.anthropic.models.messages.Tool;
+import com.anthropic.models.messages.ToolUnion;
+import com.anthropic.models.messages.ToolUseBlock;
 
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -11,12 +15,15 @@ import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * LLM integration using Anthropic's Claude API with MCP server integration.
@@ -85,89 +92,72 @@ public class MockLLM {
      * 
      * @param input The text input to process
      */
-    public static void processInput(String input) {
+    public static void processInput(String input, List<ToolUnion> tools) {
+
         try {
             MessageCreateParams createParams = MessageCreateParams.builder()
                     .model(DEFAULT_MODEL)
                     .maxTokens(MAX_TOKENS)
                     .addUserMessage(input)
+                    .tools(tools)
                     .build();
 
-            client.messages()
-                    .create(createParams)
-                    .thenAccept(message -> message.content().stream()
-                            .flatMap(contentBlock -> contentBlock.text().stream())
-                            .forEach(textBlock -> System.out.println(textBlock.text())))
-                    .join();
+            
+           Message response = client.messages().create(createParams).get();
+
+
+
+            if (response.stopReason().equals("tool_use")) {
+                // Extract tool use blocks from the response
+                List<ToolUseBlock> toolUseBlocks = response.content()
+                    .filter(block -> block instanceof ToolUseBlock)
+                    .map(block -> (ToolUseBlock) block)
+                    .collect(Collectors.toList());
+                
+                // Process each tool use request
+                for (ToolUseBlock toolUseBlock : toolUseBlocks) {
+                    String toolId = toolUseBlock.getId();
+                    String toolName = toolUseBlock.getName();
+                    Map<String, Object> toolInput = toolUseBlock.getInput();
+                    
+                    // Execute the actual tool functionality here based on toolName
+                    // For example, if toolName is "get_weather", call your weather API
+                    Object toolResult = executeYourTool(toolName, toolInput);
+                    
+                    // Return the tool results to Claude
+                    MessageCreateParams continueParams = MessageCreateParams.builder()
+                        .model("claude-3-7-sonnet-20250219")
+                        .maxTokens(1000)
+                        .messages(
+                            // Include previous messages
+                            response.getMessages()
+                            // Add new user message with tool result
+                            .add(MessageCreateParams.Message.builder()
+                                .role("user")
+                                .content(List.of(
+                                    MessageCreateParams.ContentBlock.toolResult(
+                                        ToolResultBlock.builder()
+                                            .toolCallId(toolId)
+                                            .content(toolResult) // Your tool result here
+                                            .build()
+                                    )
+                                ))
+                                .build()
+                            )
+                        )
+                        .build();
+                    
+                    // Continue the conversation with tool results
+                    response = client.messages().create(continueParams);
+                }
+            }
+        
         } catch (Exception e) {
             System.err.println("Error calling Anthropic API: " + e.getMessage());
             e.printStackTrace();
         }
     }
-    
-    /**
-     * Process calculator operation first through MCP server and then send result to LLM.
-     * 
-     * @param operation The mathematical operation (add, subtract, multiply, divide)
-     * @param a First operand
-     * @param b Second operand
-     * @return CompletableFuture that will be completed when LLM processing is done
-     */
-    public static CompletableFuture<Void> processCalculation(String operation, double a, double b) {
-        if (mcpClient == null) {
-            System.err.println("MCP client not initialized. Cannot perform calculation.");
-            return CompletableFuture.completedFuture(null);
-        }
-        
-        try {
-            // Call the calculator tool through MCP
-            CallToolRequest request = new CallToolRequest("calculator",
-                    Map.of(
-                        "operation", operation,
-                        "a", a,
-                        "b", b
-                    ));
 
-            CallToolResult result = mcpClient.callTool(request);
-            
-            // Process and display the calculator result
-            String calculatorOutput;
-            if (result.isError()) {
-                calculatorOutput = "Calculator Error: " + ((TextContent) result.content().get(0)).text();
-                System.out.println(calculatorOutput);
-                return CompletableFuture.completedFuture(null);
-            } else {
-                calculatorOutput = ((TextContent) result.content().get(0)).text();
-                System.out.println("Calculator Result: " + calculatorOutput);
-            }
-            
-            // Now pass the calculator result to the LLM for processing
-            String promptToLLM = "I performed a calculation using a calculator tool and got the following result: " + 
-                                calculatorOutput + 
-                                "\n\nCan you interpret this result and provide any additional insights or context?";
-            
-            MessageCreateParams createParams = MessageCreateParams.builder()
-                    .model(DEFAULT_MODEL)
-                    .maxTokens(MAX_TOKENS)
-                    .addUserMessage(promptToLLM)
-                    .build();
-
-            return client.messages()
-                    .create(createParams)
-                    .thenAccept(message -> {
-                        System.out.println("\n--- LLM Analysis of Calculation ---");
-                        message.content().stream()
-                               .flatMap(contentBlock -> contentBlock.text().stream())
-                               .forEach(textBlock -> System.out.println(textBlock.text()));
-                    });
-            
-        } catch (Exception e) {
-            System.err.println("Error processing calculation: " + e.getMessage());
-            e.printStackTrace();
-            return CompletableFuture.completedFuture(null);
-        }
-    }
-    
     /**
      * Closes the MCP client connection.
      */
