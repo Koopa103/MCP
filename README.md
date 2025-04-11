@@ -7,12 +7,12 @@ How to run the MCP server, also export an api key somehow `ANTHROPIC_API_KEY` sh
 
 
 ```
-mvn exec:java -Dexec.mainClass="com.example.McpServer"
-mvn exec:java -Dexec.mainClass="com.example.McpServerExample"
+ mvn clean compile spring-boot:run -Dspring-boot.run.profiles=dev,local 
+
 ```
-and this
+
+
 ```
-mvn exec:java -Dexec.mainClass="com.example.McpClient"
 mvn exec:java -Dexec.mainClass="com.example.McpClientExample"
 
 ```
