@@ -11,21 +11,18 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
-import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
-import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import io.modelcontextprotocol.spec.McpServerTransport;
+import io.modelcontextprotocol.spec.McpServerTransportProvider;
+
+import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import io.modelcontextprotocol.server.McpServer;
-
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 
 
 
 public class McpServerExample {
 
-    public McpSyncServer mcpServer(HttpServletSseServerTransportProvider transportProvider) {
+    public McpSyncServer mcpServer(McpServerTransportProvider transportProvider) {
 
         // Define input schema for calculator tool
         String schema = """
@@ -90,6 +87,8 @@ public class McpServerExample {
         );
 
         // Create and start the server
+
+
         McpSyncServer server = McpServer.sync(transportProvider)
                 .serverInfo("calculator-server", "1.0.0")
                 .capabilities(ServerCapabilities.builder()

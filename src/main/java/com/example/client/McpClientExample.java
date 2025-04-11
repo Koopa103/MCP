@@ -1,22 +1,22 @@
-package com.example;
+package com.example.client;
 
 
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Scanner;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.ServerParameters;
-import io.modelcontextprotocol.client.transport.StdioClientTransport;
-import io.modelcontextprotocol.server.transport.HttpServletSseServerTransportProvider;
+import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
+import io.modelcontextprotocol.spec.ClientMcpTransport;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import io.modelcontextprotocol.spec.McpTransport;
 
 public class McpClientExample {
 
@@ -25,18 +25,17 @@ public class McpClientExample {
         //String serverPath = Paths.get("/home/austin/CodeBukkit/CS375/MCP/src/main/java/com/example/McpServerExample.java").toAbsolutePath().toString();
         
         // Create server parameters for launching the server process
-        ServerParameters params = ServerParameters.builder("mvn exec:java")
-                .args("-Dexec.mainClass=\"com.example.McpServer\"")
-                .build();
+        // ServerParameters params = ServerParameters.builder("mvn exec:java")
+        //         .args("-Dexec.mainClass=\"com.example.McpServer\"")
+        //         .build();
                 
         // Create stdio transport for communicating with the server
-        McpClientTransport transport = new StdioClientTransport(params);
-        HttpServletSseServerTransportProvider Mcp = new HttpServletSseServerTransportProvider(new ObjectMapper(), "/mcp/message");
-        
+        WebClient.Builder webClientBuilder = WebClient.builder()
+                                        .baseUrl("http://localhost:8080/");
+        McpClientTransport transport = new WebFluxSseClientTransport(webClientBuilder);
+
         // Create and initialize the client
-        McpSyncClient client = McpClient.sync(transport)
-                .requestTimeout(java.time.Duration.ofSeconds(30))
-                .build();
+        McpSyncClient client = McpClient.sync(transport).requestTimeout(java.time.Duration.ofSeconds(30)).build();
                 
         try {
             // Initialize connection with the server
