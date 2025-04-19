@@ -7,7 +7,7 @@ How to run the MCP server, also export an api key somehow `ANTHROPIC_API_KEY` sh
 
 
 ```
- mvn clean compile spring-boot:run -Dspring-boot.run.profiles=dev,local 
+mvn clean compile spring-boot:run -Dspring-boot.run.profiles=dev,local 
 
 ```
 
