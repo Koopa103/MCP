@@ -2,6 +2,7 @@ package com.example;
 
 
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
+import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import io.modelcontextprotocol.server.McpSyncServer;
 
 import org.springframework.context.annotation.Bean;
@@ -37,6 +38,7 @@ public class AppConfig {
 		// Configure server capabilities with resource support
 
 		// Create the server with both tool and resource capabilities
+		
 		var server = new McpServerExample().mcpServer(transportProvider);
 		
 		return server;

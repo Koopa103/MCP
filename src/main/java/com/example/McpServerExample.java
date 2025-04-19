@@ -22,7 +22,7 @@ import io.modelcontextprotocol.server.McpServer;
 
 public class McpServerExample {
 
-    public McpSyncServer mcpServer(McpServerTransportProvider transportProvider) {
+    public McpSyncServer mcpServer(WebFluxSseServerTransportProvider transportProvider) {
 
         // Define input schema for calculator tool
         String schema = """
