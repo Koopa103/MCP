@@ -1,22 +1,33 @@
 package com.example;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
+import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.sql.*;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * MCP server exposing a single synchronous tool – <code>query_sql_view</code> – that
@@ -75,16 +86,24 @@ public class SqlViewToolServer {
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    public static void main(String[] args) throws Exception {
-        var transportProvider = new StdioServerTransportProvider(MAPPER);
+    public McpSyncServer mcpSqliteServer(WebFluxSseServerTransportProvider transportProvider) {
 
         McpSyncServer server = McpServer.sync(transportProvider)
                 .serverInfo("sql-view-server", "1.1.0")
-                .capabilities(ServerCapabilities.builder().tools(true).logging().build())
+                .capabilities(ServerCapabilities.builder()
+                    .tools(true)
+                    .logging()
+                    .build())
                 .tools(createQueryTool())
                 .build();
 
-        Runtime.getRuntime().addShutdownHook(new Thread(server::closeGracefully));
+
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    System.err.println("Shutting down server...");
+                    server.close();
+                }));
+
+        return server;
     }
 
     /**

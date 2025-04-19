@@ -92,13 +92,16 @@ public class McpServerExample {
         McpSyncServer server = McpServer.sync(transportProvider)
                 .serverInfo("calculator-server", "1.0.0")
                 .capabilities(ServerCapabilities.builder()
-                        .tools(true)  // Enable tool support with list changes notification
+                        .tools(true)
                         .logging()    // Enable logging support
                         .build())
+                .tools(calculatorTool)
                 .build();
 
         // Register the calculator tool
-        server.addTool(calculatorTool);
+        System.out.println("SREVER CAN DO THIS!: "+ server.getServerCapabilities().toString());
+        System.out.println("TOOLS CAN DO THIS!: "+ server.getServerInfo());
+
 
         // Send a log message
         server.loggingNotification(McpSchema.LoggingMessageNotification.builder()
