@@ -77,6 +77,13 @@ public class McpClientExample {
  
                     
                     // Call the MockLLM to process the result with Claude
+                    // Make sure the input contains a mathematical expression to trigger the calculator
+                    if (promptToLLM.contains("add") || 
+                        promptToLLM.contains("subtract") || 
+                        promptToLLM.contains("multiply") || 
+                        promptToLLM.contains("divide")) {
+                        System.out.println("Detected a math operation. Sending to Claude with calculator tool...");
+                    }
                     MockLLM.processInput(promptToLLM);
                     
                 } catch (NumberFormatException e) {

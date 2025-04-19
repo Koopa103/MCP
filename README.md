@@ -13,7 +13,7 @@ How to run the MCP server, also export an api key somehow `ANTHROPIC_API_KEY` sh
 
 
 ```
-mvn exec:java -Dexec.mainClass="com.example.McpClientExample"
+mvn exec:java -Dexec.mainClass="com.example.client.McpClientExample"
 
 ```
 
