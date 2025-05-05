@@ -24,6 +24,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import com.example.JsonSerializer;
 
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -192,7 +193,7 @@ public class MockLLM {
             // Execute the tool using MCP server
             if (mcpClient != null && !toolName.isEmpty()) {
                 // Create tool request for MCP server
-                CallToolRequest toolRequest = new CallToolRequest(toolName, toolInput);
+                CallToolRequest toolRequest = new CallToolRequest(toolName,JsonSerializer.convertToolUseBlockToJson(toolUseBlock));
                 
                 // Call the tool on the MCP server
                 System.out.println("Calling MCP tool: " + toolName);
