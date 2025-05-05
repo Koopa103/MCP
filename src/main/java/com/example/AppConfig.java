@@ -33,13 +33,16 @@ public class AppConfig {
     }
 
 	@Bean
-	public McpSyncServer mcpServer(WebFluxSseServerTransportProvider transportProvider) {
+	public McpSyncServer mcpServerThing(WebFluxSseServerTransportProvider transportProvider) {
 
 		// Configure server capabilities with resource support
 
 		// Create the server with both tool and resource capabilities
 		
 		var server = new McpServerExample().mcpServer(transportProvider);
+		System.out.println("----- i hate you bro --- ");
+
+		System.out.println(server.getServerInfo());
 		
 		return server;
 	} 

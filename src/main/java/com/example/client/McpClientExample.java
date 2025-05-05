@@ -10,10 +10,14 @@ import com.example.MockLLM;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
+
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
+import io.modelcontextprotocol.spec.McpSchema.CreateMessageRequest;
+import io.modelcontextprotocol.spec.McpSchema.CreateMessageResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 
 public class McpClientExample {
@@ -21,11 +25,24 @@ public class McpClientExample {
     public static void main(String[] args) {
         // Create WebClient for communicating with the server
         WebClient.Builder webClientBuilder = WebClient.builder()
-                                        .baseUrl("http://localhost:8080/");
+                                        .baseUrl("http://localhost:8080");
         McpClientTransport transport = new WebFluxSseClientTransport(webClientBuilder);
 
+
+        // Function<CreateMessageRequest, CreateMessageResult> samplingHandler = request -> {
+        //     // Sampling implementation that interfaces with LLM
+        //     return new CreateMessageResult(MockLLM.processInput(response));
+        // };
+
+
         // Create and initialize the client
-        McpSyncClient client = McpClient.sync(transport).requestTimeout(java.time.Duration.ofSeconds(30)).build();
+        McpSyncClient client = McpClient.sync(transport).requestTimeout(java.time.Duration.ofSeconds(30))
+            .capabilities(ClientCapabilities.builder()
+                .roots(true)      // Enable roots capability
+                .sampling()
+                .build())
+            //.sampling(samplingHandler)
+            .build();
                 
         try {
             // Initialize connection with the server

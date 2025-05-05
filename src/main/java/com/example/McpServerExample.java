@@ -90,25 +90,30 @@ public class McpServerExample {
 
 
         McpSyncServer server = McpServer.sync(transportProvider)
-                .serverInfo("calculator-server", "1.0.0")
+        
+                .serverInfo("calculator-server", "1.8.0")
                 .capabilities(ServerCapabilities.builder()
-                        .tools(true)
-                        .logging()    // Enable logging support
-                        .build())
-                .tools(calculatorTool)
+                  .resources(false, true)  // Resource support with list changes notifications
+                  .tools(true)            // Tool support with list changes notifications
+                  .prompts(true)          // Prompt support with list changes notifications
+                  .logging().build())
                 .build();
 
+        server.addTool(calculatorTool);
+        server.notifyToolsListChanged();
+        
+        
         // Register the calculator tool
-        System.out.println("SREVER CAN DO THIS!: "+ server.getServerCapabilities().toString());
-        System.out.println("TOOLS CAN DO THIS!: "+ server.getServerInfo());
+        System.out.println("SREVER CAN DO THIS!: "+ server.getServerInfo().toString());
+        System.out.println("TOOLS CAN DO THIS!: "+ server.getServerCapabilities());
 
 
         // Send a log message
-        server.loggingNotification(McpSchema.LoggingMessageNotification.builder()
-                .level(McpSchema.LoggingLevel.INFO)
-                .logger("server")
-                .data("Calculator server is ready")
-                .build());
+        // server.loggingNotification(McpSchema.LoggingMessageNotification.builder()
+        //         .level(McpSchema.LoggingLevel.INFO)
+        //         .logger("server")
+        //         .data("Calculator server is ready")
+        //         .build());
 
         System.err.println("Server started. Waiting for connections...");
         

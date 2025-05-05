@@ -1,3 +1,30 @@
+# application.yml
+debug: true
+
+spring:
+  profiles:
+    active: dev
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
 logging:
   level:
+    root: INFO
     org.springframework.web: DEBUG
+    org.springframework.boot.autoconfigure: TRACE
+    org.springframework.context.annotation: TRACE
+    your.package.name: TRACE
+  file:
+    name: logs/application.log
+    
+management:
+  endpoints:
+    web:
+      exposure:
+        include: beans,conditions,health,info,metrics,env
+  endpoint:
+    health:
+      show-details: always
