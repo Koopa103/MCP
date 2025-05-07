@@ -1,4 +1,25 @@
-CREATE VIEW vw_course_min_grade AS
+DROP VIEW IF EXISTS course_min_grade;
+DROP VIEW IF EXISTS major_concentrations;
+DROP VIEW IF EXISTS major_completion;
+DROP VIEW IF EXISTS student_classes;
+DROP VIEW IF EXISTS current_hours;
+DROP VIEW IF EXISTS student_department;
+DROP VIEW IF EXISTS course_professors;
+DROP VIEW IF EXISTS student_majors;
+DROP VIEW IF EXISTS remaining_major_courses;
+DROP VIEW IF EXISTS department_enrollment_count;
+DROP VIEW IF EXISTS department_professors;
+DROP VIEW IF EXISTS major_semester_courses;
+DROP VIEW IF EXISTS course_offerings;
+DROP VIEW IF EXISTS major_required_courses_count;
+DROP VIEW IF EXISTS transferable_courses;
+DROP VIEW IF EXISTS student_class_rooms;
+DROP VIEW IF EXISTS major_professors;
+DROP VIEW IF EXISTS required_gpa_calc;
+DROP VIEW IF EXISTS student_current_class_schedule;
+
+
+CREATE VIEW course_min_grade AS
 SELECT 
     c.course_id,
     c.course_code,
@@ -7,10 +28,10 @@ SELECT
 FROM Courses c;
 
 -- SELECT minimum_required_grade
--- FROM vw_course_min_grade
+-- FROM course_min_grade
 -- WHERE course_code = 'CS
 
-CREATE VIEW vw_major_concentrations AS
+CREATE VIEW major_concentrations AS
 SELECT 
     m.major_id,
     m.major_name,
@@ -20,10 +41,10 @@ JOIN Major_Concentrations mc
     ON m.major_id = mc.major_id;
 
 -- SELECT concentration_name
--- FROM vw_major_concentrations
+-- FROM major_concentrations
 -- WHERE major_name = 'Computer Science';
 
-CREATE VIEW vw_major_completion AS
+CREATE VIEW major_completion AS
 SELECT 
     s.student_id,
     m.major_id,
@@ -46,11 +67,11 @@ GROUP BY
     m.total_required_hours;
 
 -- SELECT hours_remaining
--- FROM vw_major_completion
+-- FROM major_completion
 -- WHERE student_id = 12345;
 
 
-CREATE VIEW vw_student_classes AS
+CREATE VIEW student_classes AS
 SELECT 
     s.student_id,
     c.course_code,
@@ -64,10 +85,10 @@ WHERE e.currently_enrolled = 1;
 -- Adjust the condition used to define “current”
 
 -- SELECT *
--- FROM vw_student_classes
+-- FROM student_classes
 -- WHERE student_id = 12345;
 
-CREATE VIEW vw_current_hours AS
+CREATE VIEW current_hours AS
 SELECT 
     s.student_id,
     SUM(c.credit_hours) AS total_current_hours
@@ -80,10 +101,10 @@ WHERE e.currently_enrolled = 1
 GROUP BY s.student_id;
 
 -- SELECT total_current_hours
--- FROM vw_current_hours
+-- FROM current_hours
 -- WHERE student_id = 12345;
 
-CREATE VIEW vw_student_department AS
+CREATE VIEW student_department AS
 SELECT 
     s.student_id,
     d.dept_id,
@@ -95,10 +116,10 @@ JOIN Departments d
     ON m.dept_id = d.dept_id;
 
 -- SELECT dept_name
--- FROM vw_student_department
+-- FROM student_department
 -- WHERE student_id = 12345;
 
-CREATE VIEW vw_course_professors AS
+CREATE VIEW course_professors AS
 SELECT 
     c.course_code,
     c.course_name,
@@ -112,10 +133,10 @@ JOIN Professors p
     ON cs.prof_id = p.prof_id;
 
 -- SELECT first_name, last_name
--- FROM vw_course_professors
+-- FROM course_professors
 -- WHERE course_code = 'CS375';
 
-CREATE VIEW vw_student_majors AS
+CREATE VIEW student_majors AS
 SELECT 
     s.student_id,
     m.major_id,
@@ -127,10 +148,10 @@ JOIN Majors m
     ON sm.major_id = m.major_id;
 
 -- SELECT major_name
--- FROM vw_student_majors
+-- FROM student_majors
 -- WHERE student_id = 12345;
 
-CREATE VIEW vw_remaining_major_courses AS
+CREATE VIEW remaining_major_courses AS
 SELECT 
     s.student_id,
     m.major_id,
@@ -153,10 +174,10 @@ WHERE NOT EXISTS (
 );
 
 -- SELECT course_code, course_name
--- FROM vw_remaining_major_courses
+-- FROM remaining_major_courses
 -- WHERE student_id = 12345;
 
-CREATE VIEW vw_department_enrollment_count AS
+CREATE VIEW department_enrollment_count AS
 SELECT 
     s.student_id,
     d.dept_name,
@@ -171,12 +192,12 @@ JOIN Departments d
 GROUP BY s.student_id, d.dept_name;
 
 -- SELECT dept_name
--- FROM vw_department_enrollment_count
+-- FROM department_enrollment_count
 -- WHERE student_id = 12345
 -- ORDER BY total_enrollments DESC
 -- LIMIT 1;
 
-CREATE VIEW vw_department_professors AS
+CREATE VIEW department_professors AS
 SELECT 
     d.dept_id,
     d.dept_name,
@@ -188,10 +209,10 @@ JOIN Professors p
     ON d.dept_id = p.dept_id;
 
 -- SELECT COUNT(prof_id) AS total_teachers
--- FROM vw_department_professors
+-- FROM department_professors
 -- WHERE dept_name = 'SITC';
 
-CREATE VIEW vw_major_semester_courses AS
+CREATE VIEW major_semester_courses AS
 SELECT 
     m.major_id,
     m.major_name,
@@ -205,11 +226,11 @@ JOIN Courses c
     ON msc.course_id = c.course_id;
 
 -- SELECT course_code, course_name
--- FROM vw_major_semester_courses
+-- FROM major_semester_courses
 -- WHERE major_name = 'Computer Science' 
 --   AND semester_number = 1;
 
-CREATE VIEW vw_course_offerings AS
+CREATE VIEW course_offerings AS
 SELECT
     c.course_id,
     c.course_code,
@@ -221,12 +242,12 @@ JOIN Course_Offerings co
     ON c.course_id = co.course_id;
 
 -- SELECT term, year
--- FROM vw_course_offerings
+-- FROM course_offerings
 -- WHERE course_code = 'CS375'
 -- ORDER BY year, term
 -- LIMIT 1; 
 
-CREATE VIEW vw_major_required_courses_count AS
+CREATE VIEW major_required_courses_count AS
 SELECT 
     m.major_id,
     m.major_name,
@@ -237,10 +258,10 @@ JOIN Required_Courses rc
 GROUP BY m.major_id, m.major_name;
 
 -- SELECT total_required_courses
--- FROM vw_major_required_courses_count
+-- FROM major_required_courses_count
 -- WHERE major_name = 'Computer Science';
 
-CREATE VIEW vw_transferable_courses AS
+CREATE VIEW transferable_courses AS
 SELECT 
     s.student_id,
     old_m.major_name AS old_major,
@@ -263,11 +284,11 @@ JOIN Required_Courses rc
 WHERE e.grade_passed = 1;
 
 -- SELECT course_code, course_name
--- FROM vw_transferable_courses
+-- FROM transferable_courses
 -- WHERE student_id = 12345
 --   AND new_major = 'Information Systems';
 
-CREATE VIEW vw_student_class_rooms AS
+CREATE VIEW student_class_rooms AS
 SELECT 
     s.student_id,
     c.course_code,
@@ -288,10 +309,10 @@ JOIN Courses c
 WHERE e.currently_enrolled = 1;
 
 -- SELECT course_code, room_number, building_name
--- FROM vw_student_class_rooms
+-- FROM student_class_rooms
 -- WHERE student_id = 12345;
 
-CREATE VIEW vw_major_professors AS
+CREATE VIEW major_professors AS
 SELECT
     m.major_id,
     m.major_name,
@@ -305,10 +326,10 @@ JOIN Professors p
     ON d.dept_id = p.dept_id;
 
 -- SELECT first_name, last_name
--- FROM vw_major_professors
+-- FROM major_professors
 -- WHERE major_name = 'Computer Science';
 
-CREATE VIEW vw_required_gpa_calc AS
+CREATE VIEW required_gpa_calc AS
 SELECT
     s.student_id,
     m.major_name,
@@ -325,7 +346,7 @@ JOIN Courses c
 WHERE e.currently_enrolled = 1
 GROUP BY s.student_id, m.major_name, m.minimum_gpa_required;
 
-CREATE VIEW vw_student_current_class_schedule AS
+CREATE VIEW student_current_class_schedule AS
 SELECT 
     s.student_id,
     c.course_code,
@@ -349,7 +370,7 @@ JOIN Buildings b
 WHERE e.currently_enrolled = 1;
 
 -- SELECT course_code, day_of_week, start_time, end_time, room_number, building_name
--- FROM vw_student_current_class_schedule
+-- FROM student_current_class_schedule
 -- WHERE student_id = 12345
 --   AND day_of_week = 'MWF';
 

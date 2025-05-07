@@ -1,248 +1,219 @@
-// package com.example;
+package com.example;
 
-// import java.nio.file.Files;
-// import java.nio.file.Path;
-// import java.sql.Connection;
-// import java.sql.DriverManager;
-// import java.sql.PreparedStatement;
-// import java.sql.ResultSet;
-// import java.sql.ResultSetMetaData;
-// import java.sql.SQLException;
-// import java.sql.Statement;
-// import java.util.ArrayList;
-// import java.util.Iterator;
-// import java.util.LinkedHashMap;
-// import java.util.List;
-// import java.util.Map;
-// import java.util.regex.Matcher;
-// import java.util.regex.Pattern;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
 
-// import com.fasterxml.jackson.core.JsonProcessingException;
-// import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-// import io.modelcontextprotocol.server.McpServer;
-// import io.modelcontextprotocol.server.McpServerFeatures;
-// import io.modelcontextprotocol.server.McpSyncServer;
-// import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
-// import io.modelcontextprotocol.spec.McpSchema;
-// import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-// import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
-// import io.modelcontextprotocol.spec.McpSchema.Tool;
+import io.modelcontextprotocol.server.McpServerFeatures;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import io.modelcontextprotocol.spec.McpSchema.Tool;
 
-// /**
-//  * MCP server exposing a single synchronous tool – <code>query_sql_view</code> – that
-//  * (1) boots the SQL views contained in <b>/mnt/data/Views.sql</b>, (2) lets an LLM
-//  * list and query those views at run‑time, and (3) returns the result‑set as JSON.
-//  * <p>
-//  * Required environment variables:
-//  * <ul>
-//  *   <li><b>MSSQL_URL</b> &nbsp;– full JDBC URL, e.g. <code>jdbc:sqlserver://localhost:1433;databaseName=mydb</code></li>
-//  *   <li><b>MSSQL_USER</b> – database user</li>
-//  *   <li><b>MSSQL_PASSWORD</b> – database password</li>
-//  * </ul>
-//  */
-// public class SqlViewToolServer {
+/**
+ * MCP server that exposes <em>one dedicated tool per SQL view</em> backed by
+ * an <b>embedded SQLite database</b> (via the {@code sqlite-jdbc} driver).
+ * <p>
+ * Every query tool returns <strong>all rows exactly as the view produces them</strong> –
+ * no implicit limits and <em>no filter parameter</em>.
+ */
+public class SqlViewToolServer {
 
-//     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
-//     /** <view name> → example SELECT line (may be empty). */
-//     private static final Map<String, String> VIEWS = new LinkedHashMap<>();
+    //────────────────────────── Paths & URLs ──────────────────────────
+    /** Base directory that holds {@code Views.sql} and the {@code .db} files. */
+    private static final Path MCP_DIR;
+    /** JDBC URL for the SQLite file (can be overridden with {@code SQLITE_DB_URL}). */
+    private static final String DB_URL;
 
-//     // ─────────────────────── static boot logic ───────────────────────────────
-//     static {
-//         try {
-//             // Load the whole Views.sql script
-//             Path sqlPath = Path.of("/mnt/data/Views.sql");
-//             String script = Files.readString(sqlPath);
+    static {
+        //  Locate external MCP folder
+        String envDir = System.getenv("MCP_DIR");
+        Path base = (envDir != null && !envDir.isBlank())
+                ? Paths.get(envDir).toAbsolutePath().normalize()
+                : Paths.get("..", "MCP").toAbsolutePath().normalize();
+        MCP_DIR = base;
 
-//             // Parse examples + view names (example line immediately precedes CREATE VIEW)
-//             Pattern p = Pattern.compile(
-//                     "(?m)^--\\s*Example:\\s*(.*?)\\R\\s*CREATE\\s+VIEW\\s+([\\w.]+)",
-//                     Pattern.CASE_INSENSITIVE);
-//             Matcher m = p.matcher(script);
-//             while (m.find()) {
-//                 String example = m.group(1).trim();
-//                 String view    = m.group(2).trim();
-//                 VIEWS.put(view, example);
-//             }
+        //  Build DB URL (honour SQLITE_DB_URL if provided)
+        String envDbUrl = System.getenv("SQLITE_DB_URL");
+        DB_URL = (envDbUrl != null && !envDbUrl.isBlank())
+                ? envDbUrl
+                : "jdbc:sqlite:" + MCP_DIR.resolve("Database2.db");
+    }
 
-//             // Execute the script so the views actually exist
-//             try (Connection c = DriverManager.getConnection(
-//                     System.getenv("MSSQL_URL"),
-//                     System.getenv("MSSQL_USER"),
-//                     System.getenv("MSSQL_PASSWORD"));
-//                  Statement s = c.createStatement()) {
+    //────────────────────────── Tool builders ─────────────────────────
 
-//                 // crude split on GO batch separators
-//                 for (String batch : script.split("(?mi)^\\s*GO\\s*$")) {
-//                     if (!batch.isBlank()) {
-//                         s.execute(batch);
-//                     }
-//                 }
-//             }
-//         } catch (Exception e) {
-//             throw new RuntimeException("Failed to load/execute Views.sql", e);
-//         }
-//     }
-//     // ─────────────────────────────────────────────────────────────────────────
+    public static String removeQuotes(String input) {
+        if (input == null || input.length() < 2) return input;
+        
+        // Option 1: Using substring
+        if ((input.startsWith("\"") && input.endsWith("\"")) || 
+            (input.startsWith("'") && input.endsWith("'"))) {
+            return input.substring(1, input.length() - 1);
+        }
+        
+        // Option 2: Handle unmatched quotes
+        String result = input;
+        if (result.startsWith("\"") || result.startsWith("'")) {
+            result = result.substring(1);
+        }
+        if (result.endsWith("\"") || result.endsWith("'")) {
+            result = result.substring(0, result.length() - 1);
+        }
+        
+        return result;
+    }
+    
+    private static McpServerFeatures.SyncToolSpecification createQueryToolForView() {
+        String toolName = "Queryer";
+        String description = ("""
+                Queryer
+Description
+The Queryer is a SQL query tool that accesses academic database views containing information about students, courses, majors, professors, departments, and class schedules. It allows retrieval of specific academic information by querying predefined university database views.
+Capabilities
 
-//     public McpSyncServer mcpSqliteServer(WebFluxSseServerTransportProvider transportProvider) {
+Query detailed information about student academic records, course offerings, and curriculum requirements
+Access information about course-major relationships and completion requirements
+Retrieve data about professor assignments and department structures
+View student enrollment information, schedules, and progress toward degree completion
+Calculate academic metrics such as GPA and credit hour completion
 
-//         McpSyncServer server = McpServer.sync(transportProvider)
-//                 .serverInfo("sql-view-server", "1.1.0")
-//                 .capabilities(ServerCapabilities.builder()
-//                     .tools(true)
-//                     .logging()
-//                     .build())
-//                 .tools(createQueryTool())
-//                 .build();
+When to Use
+
+When you need specific academic information from the university database
+To answer questions about student progress, course requirements, or departmental structure
+When assisting with academic planning and course selection
+To verify course prerequisites, major requirements, or schedule conflicts
+When checking room assignments, professor information, or enrollment capacities
+
+When Not to Use
+
+For modifying any data in the database (this is a read-only tool)
+To access student personal information beyond academic records
+For retrieving historical data not contained in the defined views
+When the request falls outside the scope of the available views
+To make predictions about future course offerings not already in the system
+
+Parameters
+You're paramater is query. This is a SQL query to search the views. The query should be a valid SQL statement that can be executed against the database views.
+Available Views
+
+course_min_grade: Minimum passing grade required for each course. Table schema course_min_grade(course_id,course_name,minimum_required_grade).
+major_concentrations: Every concentration offered within each major. Table schema major_concentrations(major_id,major_name,concentration_name).
+major_completion: Credit-hours completed vs. required (and remaining) for every student's major. Table schema major_completion(student_id,major_id,major_name,hours_completed,hours_required,hours_remaining)
+student_classes: Past & present classes for every student, with grades. Table schema student_classes(student_id,section_crn,course_id,course_name,term,days,room,grade).
+current_hours: Current-term credit-hour load per student. Table schema current_hours(student_id,current_hours).
+student_department: Department that hosts each student's declared major. Table schema student_department(student_id,department_id,department_name).
+course_professors: All professors who have ever taught each course code. Table schema course_professors(course_id,course_name,professor_id,firstname,lastname).
+student_majors: One row per student/major link (supports double-majors/minors). Table schema student_majors(student_id,major_id,major_name).
+remaining_major_courses: Courses a student still needs to pass for the major. Table schema remaining_major_courses(student_id,major_id,course_id,course_name).
+department_enrollment_count: Head-count of students currently enrolled in courses of each department. department_enrollment_count(department_id,department_name,enrolled_students).
+department_professors: Directory of professors in every department. department_professors(department_id,department_name,professor_id,firstname,lastname,adjunct).
+major_semester_courses: Ideal semester-by-semester plan for every major. Table schema major_semester_courses(major_id,course_id,course_name,hrs).
+course_offerings: Scheduled class sections with term, capacity, seats remaining, meeting times. Table schema course_offerings(course_id,course_name,section_crn,term,days,room,startdate,enddate).
+major_required_courses_count: Count of distinct courses required in each major. Table schema major_required_courses_count(major_id,major_name,required_course_count,required_hours).
+transferable_courses: Courses completed that could satisfy remaining degree requirements but have not yet been applied. Table schema transferable_courses(student_id,potential_major,course_id,course_name).
+student_class_rooms: Physical room/building for each class a student is enrolled in. Table schema student_class_rooms(student_id,course_id,course_name,room).
+major_professors: Majors paired with all professors in the hosting department. Table schema major_professors(major_id,professor_id,firstname,lastname).
+required_gpa_calc: GPA calculated only over courses marked as required for the student's major. Table schema required_gpa_calc(student_id,major_id,required_major_gpa).
+student_current_class_schedule: Student's active weekly schedule with day-of-week, start/end times, room and building. Table schema student_current_class_schedule(student_id,course_id,course_name,days,room,term,startdate,enddate).
+
+Response Format
+You are allowed to query the views, but limit your query to the views only. The response will be in CSV format, with the first row containing the column names and subsequent rows containing the data. Each value will be separated by a comma, and any commas within values will be escaped with double quotes. The response will be a string representation of the CSV data.
+                """);
 
 
-//                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-//                     System.err.println("Shutting down server...");
-//                     server.close();
-//                 }));
+        String schema = """
+        {
+            "type": "object",
+            "properties": {
+                "operation": {
+                    "type": "string",
+                    "description": "The operation to queue the SQL server views for specific data to answer user questions."
+                },
+                "view": {
+                    "type": "string",
+                    "description": "An SQL query to searth the views"
+                }
+            },
+            "required": ["view"]
+        }
+        """;
 
-//         return server;
-//     }
 
-//     /**
-//      * Build the <code>query_sql_view</code> tool definition + handler.
-//      */
-//     private static McpServerFeatures.SyncToolSpecification createQueryTool() {
 
-//         // Build JSON Schema enum from discovered views
-//         StringBuilder enumArr = new StringBuilder("[ ");
-//         StringBuilder examplesTxt = new StringBuilder();
-//         Iterator<Map.Entry<String, String>> it = VIEWS.entrySet().iterator();
-//         while (it.hasNext()) {
-//             var e = it.next();
-//             enumArr.append('\"').append(e.getKey()).append('\"');
-//             if (it.hasNext()) enumArr.append(", ");
-//             if (!e.getValue().isBlank()) {
-//                 examplesTxt.append("• ").append(e.getKey()).append(" → ")
-//                           .append(e.getValue()).append("\n");
-//             }
-//         }
-//         enumArr.append(" ]");
+        // Tool takes no parameters at all
+        Tool tool = new Tool(toolName, description, schema);
+        return new McpServerFeatures.SyncToolSpecification(tool, (exchange, args) -> {
+            System.out.println("Tool initialized");
+            JsonNode argumentTree = MAPPER.valueToTree(args);
+            System.out.println("Argument retrieved");
+            String viewName = argumentTree.path("input").path("view").toString();
+            System.out.println("OK SO THIS HAPPENS:   \n" + viewName);
+            System.out.println(DB_URL);
+            String sql = removeQuotes(viewName);
+            System.out.println("SQL: " + sql);
 
-//         String schema = """
-//                 {
-//                   "type": "object",
-//                   "properties": {
-//                     "viewName": {
-//                       "type": "string",
-//                       "enum": %s,
-//                       "description": "One of the pre‑installed SQL views"
-//                     },
-//                     "filter": {
-//                       "type": "string",
-//                       "description": "Optional SQL predicate WITHOUT the word WHERE"
-//                     },
-//                     "limit": {
-//                       "type": "integer",
-//                       "description": "Max rows to return (TOP N)",
-//                       "default": 100
-//                     }
-//                   },
-//                   "required": ["viewName"]
-//                 }
-//                 """.formatted(enumArr);
+            try (Connection c = DriverManager.getConnection(DB_URL);
+                 Statement  st = c.createStatement();
+                 ResultSet  rs = st.executeQuery(sql)) {
+                String csv = resultSetToCsv(rs);
+                return new CallToolResult(List.of(new TextContent(csv)), false);
+            } catch (SQLException e) {
+                return new CallToolResult(List.of(new TextContent("SQL error: " + e.getMessage())), true);
+            }
+        });
+    }
 
-//         Tool toolDef = new Tool(
-//                 "query_sql_view",
-//                 """
-//                 Query a SQL‑Server view and return the rows as JSON.
-//                 Available views: 
 
-//                 vw_course_min_grade – Minimum passing grade required for each course
+   //────────────────────────── Helpers ────────────────────────────────
+    /**
+     * Converts a {@link ResultSet} to a CSV string (header row + data rows).
+     */
+    private static String resultSetToCsv(ResultSet rs) throws SQLException {
+        StringBuilder sb = new StringBuilder();
+        ResultSetMetaData md = rs.getMetaData();
+        int cols = md.getColumnCount();
 
-//                 vw_major_concentrations – Lists every concentration offered within each major
+        // Header row
+        for (int i = 1; i <= cols; i++) {
+            if (i > 1) sb.append(',');
+            sb.append(md.getColumnName(i));
+        }
+        sb.append('\n');
 
-//                 vw_major_completion – For each student, shows credit‑hours completed vs. required and hours remaining for the major
+        // Data rows
+        while (rs.next()) {
+            for (int i = 1; i <= cols; i++) {
+                if (i > 1) sb.append(',');
+                Object val = rs.getObject(i);
+                if (val != null) {
+                    String s = val.toString();
+                    // Escape commas, quotes, and newlines per RFC 4180
+                    boolean needsQuotes = s.contains(",") || s.contains("\"") || s.contains("\n");
+                    if (needsQuotes) {
+                        s = s.replace("\"", "\"\"");
+                        sb.append('"').append(s).append('"');
+                    } else {
+                        sb.append(s);
+                    }
+                }
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
+    }
 
-//                 vw_student_classes – Full class history (past + present) for every student, with grades
-
-//                 vw_current_hours – Current‑term credit‑hour load per student
-
-//                 vw_student_department – Maps students to the department that hosts their declared major
-
-//                 vw_course_professors – All professors who have ever taught each course code
-
-//                 vw_student_majors – One row per student–major link (supports double‑majors/minors)
-
-//                 vw_remaining_major_courses – Required courses a student has not yet passed
-
-//                 vw_department_enrollment_count – Head‑count of students currently enrolled in courses offered by each department
-
-//                 vw_department_professors – Directory of professors in every department
-
-//                 vw_major_semester_courses – Ideal semester‑by‑semester plan for every major
-
-//                 vw_course_offerings – Each scheduled class section with term, capacity, seats remaining, meeting times
-
-//                 vw_major_required_courses_count – Count of distinct courses required in each major
-
-//                 vw_transferable_courses – Courses a student has completed that could satisfy remaining degree requirements but have not yet been applied
-
-//                 vw_student_class_rooms – Physical room/building for each class a student is enrolled in
-
-//                 vw_major_professors – Majors paired with all professors in the hosting department
-
-//                 vw_required_gpa_calc – GPA calculated only over courses marked as “required” for a student’s major
-
-//                 vw_student_current_class_schedule – Student’s active weekly schedule with day‑of‑week, start/end times, room and building
-
-                
-//                 %s
-//                 """.formatted(examplesTxt.isEmpty() ? "(none)" : examplesTxt),
-//                 schema);
-
-//         return new McpServerFeatures.SyncToolSpecification(toolDef, (exchange, args) -> {
-//             String view   = (String) args.get("viewName");
-//             String filter = (String) args.getOrDefault("filter", "");
-//             int    limit  = (int)    args.getOrDefault("limit", 100);
-
-//             if (!VIEWS.containsKey(view)) {
-//                 return new CallToolResult(
-//                         List.of(new McpSchema.TextContent("Unknown or disallowed view: " + view)), true);
-//             }
-
-//             String sql = "SELECT TOP ? * FROM " + view + (filter.isBlank() ? "" : " WHERE " + filter);
-
-//             try (Connection c = DriverManager.getConnection(
-//                         System.getenv("MSSQL_URL"),
-//                         System.getenv("MSSQL_USER"),
-//                         System.getenv("MSSQL_PASSWORD"));
-//                  PreparedStatement ps = c.prepareStatement(sql)) {
-
-//                 ps.setInt(1, limit);
-//                 try (ResultSet rs = ps.executeQuery()) {
-//                     String json = MAPPER.writeValueAsString(toList(rs));
-//                     return new CallToolResult(
-//                             List.of(new McpSchema.TextContent(json)), false);
-//                 }
-//             } catch (SQLException | JsonProcessingException e) {
-//                 return new CallToolResult(
-//                         List.of(new McpSchema.TextContent("SQL error: " + e.getMessage())), true);
-//             }
-//         });
-//     }
-
-//     // ─────────────────────── helpers ─────────────────────────────────────────
-//     /** ResultSet ➜ List<Map<String,Object>> keeping column order. */
-//     private static List<Map<String, Object>> toList(ResultSet rs) throws SQLException {
-//         List<Map<String, Object>> out = new ArrayList<>();
-//         ResultSetMetaData md = rs.getMetaData();
-//         int cols = md.getColumnCount();
-//         while (rs.next()) {
-//             Map<String, Object> row = new LinkedHashMap<>();
-//             for (int i = 1; i <= cols; i++) {
-//                 row.put(md.getColumnLabel(i), rs.getObject(i));
-//             }
-//             out.add(row);
-//         }
-//         return out;
-//     }
-//     // ─────────────────────────────────────────────────────────────────────────
-// }
+    static McpServerFeatures.SyncToolSpecification getTool() {
+        return createQueryToolForView();
+    }
+}

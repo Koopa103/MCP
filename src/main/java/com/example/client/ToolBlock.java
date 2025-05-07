@@ -23,7 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 public class ToolBlock {
 
     private static final String DEFAULT_MODEL = "claude-3-7-sonnet-20250219";
-    private static final long MAX_TOKENS = 8192;
+    private static final long MAX_TOKENS = 2000L;
     
     /**
      * Handle a tool use request from Claude

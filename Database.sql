@@ -12,6 +12,8 @@ DROP TABLE IF EXISTS or_prereq;
 DROP TABLE IF EXISTS coreq;
 DROP TABLE IF EXISTS student_major;
 DROP TABLE IF EXISTS concentration;
+
+
 -- College table
 CREATE TABLE college (id TEXT PRIMARY KEY,name TEXT);
 
@@ -782,7 +784,7 @@ INSERT INTO section (crn,room,max,courseID,term,startdate,enddate,days) VALUES (
 INSERT INTO section (crn,room,max,courseID,term,startdate,enddate,days) VALUES (12009,25,'MBB205','CS332','Spring 2025','2025-01-14','2025-05-10','MWF');
 INSERT INTO section (crn,room,max,courseID,term,startdate,enddate,days) VALUES (12010,25,'MBB206','CS375','Spring 2025','2025-01-14','2025-05-10','TR');
 
--- CS Students
+-- CS student
 INSERT INTO student_section (studentID,sectionID,grade) VALUES (90, 12001, NULL);
 INSERT INTO student_section (studentID,sectionID,grade) VALUES (90, 12014, NULL);
 INSERT INTO student_section (studentID,sectionID,grade) VALUES (91, 12001, NULL);
@@ -803,7 +805,7 @@ INSERT INTO student_section (studentID,sectionID,grade) VALUES (98, 12003, NULL)
 INSERT INTO student_section (studentID,sectionID,grade) VALUES (98, 12016, NULL);
 INSERT INTO student_section (studentID,sectionID,grade) VALUES (99, 12001, NULL);
 INSERT INTO student_section (studentID,sectionID,grade) VALUES (99, 12014, NULL);
--- students 1-10
+-- student 1-10
 -- Interior Architecture (student 1)
 INSERT INTO student_section (studentID, sectionID, grade) VALUES (1, 10001, NULL);  -- Graphic Design
 INSERT INTO student_section (studentID, sectionID, grade) VALUES (1, 10002, NULL);
@@ -1629,3 +1631,277 @@ INSERT INTO concentration(id, major, title, reqtext)  VALUES ('MM', 'JMM', 'Medi
 INSERT INTO concentration(id, major, title, reqtext)  VALUES ('ISAS', 'IS', 'Accounting Systems', 'Minimum grade of C in each business course.');
 INSERT INTO concentration(id, major, title, reqtext)  VALUES ('ISAN', 'IS', 'Analytics', 'Minimum grade of C in each business course.');
 INSERT INTO concentration(id, major, title, reqtext)  VALUES ('ISAD', 'IS', 'Application Development', 'Minimum grade of C in each business course.');
+
+-- 1.  Minimum passing grade for each course (default 'C')
+DROP VIEW IF EXISTS course_min_grade;
+CREATE VIEW course_min_grade AS
+SELECT
+    id          AS course_id,
+    title       AS course_name,
+    'C'         AS minimum_required_grade     -- default assumption
+FROM course;
+
+-- 2.  Concentrations available for every major
+DROP VIEW IF EXISTS major_concentrations;
+CREATE VIEW major_concentrations AS
+SELECT
+    m.id            AS major_id,
+    m.title         AS major_name,
+    c.title         AS concentration_name
+FROM concentration  c
+JOIN major          m ON m.id = c.major;
+
+-- 3.  Credit‑hour progress toward a student’s active major
+DROP VIEW IF EXISTS major_completion;
+CREATE VIEW major_completion AS
+WITH passed AS (
+    SELECT
+        ss.studentID,
+        sec.courseID
+    FROM student_section ss
+    JOIN section       sec ON sec.crn = ss.sectionID
+    WHERE ss.grade IS NOT NULL            -- treat any recorded grade as “passed”
+)
+SELECT
+    s.id                                 AS student_id,
+    m.id                                 AS major_id,
+    m.title                              AS major_name,
+    SUM(co.hrs)                          AS hours_completed,
+    m.hrs                                AS hours_required,
+    (m.hrs - COALESCE(SUM(co.hrs),0))    AS hours_remaining
+FROM student          s
+JOIN student_major    sm  ON sm.studentID = s.id
+JOIN major            m   ON m.id        = sm.major
+LEFT JOIN passed           p   ON p.studentID = s.id
+LEFT JOIN course           co  ON co.id       = p.courseID
+GROUP BY s.id, m.id, m.title, m.hrs;
+
+-- 4.  All classes a student is enrolled in (past or present)
+DROP VIEW IF EXISTS student_classes;
+CREATE VIEW student_classes AS
+SELECT
+    s.id              AS student_id,
+    sec.crn           AS section_crn,
+    c.id              AS course_id,
+    c.title           AS course_name,
+    sec.term,
+    sec.days,
+    sec.room,
+    ss.grade
+FROM student_section ss
+JOIN section         sec ON sec.crn   = ss.sectionID
+JOIN course           c  ON c.id      = sec.courseID
+JOIN student          s  ON s.id      = ss.studentID;
+
+-- 5.  Current semester credit‑hour load
+DROP VIEW IF EXISTS current_hours;
+CREATE VIEW current_hours AS
+SELECT
+    s.id                AS student_id,
+    SUM(c.hrs)          AS current_hours
+FROM student_section ss
+JOIN section       sec ON sec.crn = ss.sectionID
+JOIN course         c  ON c.id   = sec.courseID
+JOIN student        s  ON s.id   = ss.studentID
+-- Treat the TERM that matches today’s calendar year/semester as “current”
+WHERE (strftime('%Y', 'now') = substr(sec.term, -4))
+GROUP BY s.id;
+
+-- 6.  The department a student’s primary major is housed in
+DROP VIEW IF EXISTS student_department;
+CREATE VIEW student_department AS
+SELECT
+    s.id          AS student_id,
+    d.id          AS department_id,
+    d.name        AS department_name
+FROM student        s
+JOIN student_major  sm ON sm.studentID = s.id
+JOIN major          m  ON m.id        = sm.major
+JOIN department     d  ON d.id        = m.deptID;
+
+-- 7.  Professors historically teaching or affiliated with a course (joined by department)
+DROP VIEW IF EXISTS course_professors;
+CREATE VIEW course_professors AS
+SELECT DISTINCT
+    c.id          AS course_id,
+    c.title       AS course_name,
+    t.id          AS professor_id,
+    t.firstname,
+    t.lastname
+FROM course     c
+JOIN teachers   t ON t.departmentID = c.department;
+
+-- 8.  All majors a student has declared
+DROP VIEW IF EXISTS student_majors;
+CREATE VIEW student_majors AS
+SELECT
+    s.id        AS student_id,
+    m.id        AS major_id,
+    m.title     AS major_name
+FROM student            s
+JOIN student_major      sm ON sm.studentID = s.id
+JOIN major              m  ON m.id        = sm.major;
+
+-- 9.  Required courses for a student’s major that they still need
+DROP VIEW IF EXISTS remaining_major_courses;
+CREATE VIEW remaining_major_courses AS
+WITH taken AS (
+    SELECT DISTINCT
+        ss.studentID,
+        sec.courseID
+    FROM student_section ss
+    JOIN section sec ON sec.crn = ss.sectionID
+)
+SELECT
+    s.id        AS student_id,
+    m.id        AS major_id,
+    c.id        AS course_id,
+    c.title     AS course_name
+FROM student          s
+JOIN student_major    sm  ON sm.studentID = s.id
+JOIN major            m   ON m.id        = sm.major
+JOIN major_class      mc  ON mc.majorID  = m.id
+JOIN course           c   ON c.id        = mc.classID
+LEFT JOIN taken       t   ON t.studentID = s.id AND t.courseID = c.id
+WHERE t.courseID IS NULL;
+
+-- 10.  Enrollment head‑count by teaching department (any term)
+DROP VIEW IF EXISTS department_enrollment_count;
+CREATE VIEW department_enrollment_count AS
+SELECT
+    d.id                          AS department_id,
+    d.name                        AS department_name,
+    COUNT(DISTINCT ss.studentID)  AS enrolled_students
+FROM department     d
+JOIN course         c  ON c.department = d.id
+JOIN section        sec ON sec.courseID = c.id
+JOIN student_section ss  ON ss.sectionID = sec.crn
+GROUP BY d.id, d.name;
+
+-- 11.  All professors in a department
+DROP VIEW IF EXISTS department_professors;
+CREATE VIEW department_professors AS
+SELECT
+    d.id          AS department_id,
+    d.name        AS department_name,
+    t.id          AS professor_id,
+    t.firstname,
+    t.lastname,
+    t.adjunct
+FROM department d
+JOIN teachers   t ON t.departmentID = d.id;
+
+-- 12.  Courses tied to a major (un‑sequenced “semester plan”)
+DROP VIEW IF EXISTS major_semester_courses;
+CREATE VIEW major_semester_courses AS
+SELECT
+    m.id      AS major_id,
+    c.id      AS course_id,
+    c.title   AS course_name,
+    c.hrs
+FROM major_class mc
+JOIN major       m ON m.id = mc.majorID
+JOIN course      c ON c.id = mc.classID;
+
+-- 13.  Historical & upcoming offerings of every course
+DROP VIEW IF EXISTS course_offerings;
+CREATE VIEW course_offerings AS
+SELECT
+    c.id      AS course_id,
+    c.title   AS course_name,
+    sec.crn   AS section_crn,
+    sec.term,
+    sec.days,
+    sec.room,
+    sec.startdate,
+    sec.enddate
+FROM course   c
+JOIN section  sec ON sec.courseID = c.id;
+
+-- 14.  Count of required courses for each major
+DROP VIEW IF EXISTS major_required_courses_count;
+CREATE VIEW major_required_courses_count AS
+SELECT
+    m.id                AS major_id,
+    m.title             AS major_name,
+    COUNT(mc.classID)   AS required_course_count,
+    m.hrs               AS required_hours
+FROM major m
+LEFT JOIN major_class mc ON mc.majorID = m.id
+GROUP BY m.id, m.title, m.hrs;
+
+-- 15.  Courses a student has that also satisfy some other major (for “what transfers?” questions)
+DROP VIEW IF EXISTS transferable_courses;
+CREATE VIEW transferable_courses AS
+WITH student_courses AS (
+    SELECT DISTINCT
+        s.id        AS student_id,
+        sec.courseID
+    FROM student_section ss
+    JOIN section sec ON sec.crn = ss.sectionID
+    JOIN student s   ON s.id   = ss.studentID
+)
+SELECT
+    sc.student_id,
+    m.id          AS potential_major,
+    c.id          AS course_id,
+    c.title       AS course_name
+FROM student_courses sc
+JOIN major_class   mc ON mc.classID = sc.courseID
+JOIN major         m  ON m.id       = mc.majorID
+JOIN course        c  ON c.id       = sc.courseID
+ORDER BY sc.student_id, m.id, c.id;
+
+-- 16.  Room assignment for each student’s classes
+DROP VIEW IF EXISTS student_class_rooms;
+CREATE VIEW student_class_rooms AS
+SELECT
+    s.id        AS student_id,
+    c.id        AS course_id,
+    c.title     AS course_name,
+    sec.room
+FROM student_section ss
+JOIN section sec ON sec.crn = ss.sectionID
+JOIN course  c   ON c.id    = sec.courseID
+JOIN student s   ON s.id    = ss.studentID;
+
+-- 17.  Professors associated with a student’s major
+DROP VIEW IF EXISTS major_professors;
+CREATE VIEW major_professors AS
+SELECT DISTINCT
+    m.id          AS major_id,
+    t.id          AS professor_id,
+    t.firstname,
+    t.lastname
+FROM major       m
+JOIN department  d ON d.id = m.deptID
+JOIN teachers    t ON t.departmentID = d.id;
+
+-- 18.  Simple GPA requirement evaluator (assume 4.0 scale & major.gpa column is required GPA)
+DROP VIEW IF EXISTS required_gpa_calc;
+CREATE VIEW required_gpa_calc AS
+SELECT
+    s.id            AS student_id,
+    m.id            AS major_id,
+    m.gpa           AS required_major_gpa
+FROM student            s
+JOIN student_major      sm ON sm.studentID = s.id
+JOIN major              m  ON m.id        = sm.major;
+
+-- 19.  Human‑readable schedule block for student’s current classes
+DROP VIEW IF EXISTS student_current_class_schedule;
+CREATE VIEW student_current_class_schedule AS
+SELECT
+    s.id            AS student_id,
+    c.id            AS course_id,
+    c.title         AS course_name,
+    sec.days,
+    sec.room,
+    sec.term,
+    sec.startdate,
+    sec.enddate
+FROM student_section ss
+JOIN section sec ON sec.crn = ss.sectionID
+JOIN course  c   ON c.id    = sec.courseID
+JOIN student s   ON s.id    = ss.studentID
+WHERE (strftime('%Y', 'now') = substr(sec.term, -4));

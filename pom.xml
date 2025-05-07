@@ -39,6 +39,25 @@
     <artifactId>mcp-spring-webflux</artifactId>
 </dependency>
 
+  <dependency>
+    <groupId>org.xerial</groupId>
+    <artifactId>sqlite-jdbc</artifactId>
+    <version>3.49.1.0</version>
+</dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+  </dependency>
+
+  <dependency>
+    <groupId>org.hamcrest</groupId>
+    <artifactId>hamcrest</artifactId>
+    <version>2.2</version>
+    <scope>test</scope>
+</dependency>
+
   <!-- <dependency>
        <groupId>org.springframework.ai</groupId>
       <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
@@ -125,24 +144,6 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.5.0</version>
       </plugin>
-
-      <plugin>
-				<artifactId>plantuml-generator-maven-plugin</artifactId>
-				<groupId>de.elnarion.maven</groupId>
-                <version>1.1.2</version>
-				<goals>
-					<goal>generate</goal>
-				</goals>
-				<configuration>
-					<outputFilename>testdiagram1.txt</outputFilename>
-                    <scanPackages>
-				<scanPackage>
-				    com.example
-				</scanPackage>
-			</scanPackages>
-			<blacklistRegexp>.*TestClass.*</blacklistRegexp>
-				</configuration>
-			</plugin>
       
 
       <plugin>
