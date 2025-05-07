@@ -34,7 +34,7 @@ public class McpClientExample {
 
 
         // Create and initialize the client
-        McpSyncClient client = McpClient.sync(transport).requestTimeout(java.time.Duration.ofSeconds(30))
+        McpSyncClient client = McpClient.sync(transport).initializationTimeout(java.time.Duration.ofSeconds(30)).requestTimeout(java.time.Duration.ofSeconds(10))
             .capabilities(ClientCapabilities.builder()
                 .roots(true)      // Enable roots capability
                 .sampling()
@@ -44,36 +44,25 @@ public class McpClientExample {
                 
         try {
             // Initialize connection with the server
-            System.out.println("Connecting to MCP server...");
+            // System.out.println("Connecting to MCP server...");
             client.initialize();
             
             // List available tools
-            System.out.println("Available tools:");
-            McpSchema.ListToolsResult toolsResult = client.listTools();
-            toolsResult.tools().forEach(tool -> {
-                System.out.println("- " + tool.name() + ": " + tool.description());
-            });
+            // System.out.println("Available tools:");
+            // McpSchema.ListToolsResult toolsResult = client.listTools();
+            // toolsResult.tools().forEach(tool -> {
+            //     System.out.println("- " + tool.name() + ": " + tool.description());
+            // });
             
             // Set up interactive session for calculator
             Scanner scanner = new Scanner(System.in);
             boolean running = true;
             
-            System.out.println("\n=== MCP Calculator with LLM Analysis ===");
-            System.out.println("1. Run test examples");
-            System.out.println("2. Interactive mode");
-            System.out.print("Choose an option (1-2) or any other key for interactive mode: ");
-            
-            String choice = scanner.nextLine().trim();
-            
-            if (choice.equals("1")) {
-               // runTestExamples(client);
-            } else {
-                // Continue with interactive mode
-                System.out.println("\nEntering interactive mode...");
-            }
+            System.out.println("\n=== Better Wildcat Central bot ===");
+
             
             while (running) {
-                System.out.println("\nEnter calculation (e.g., 'add 5 3') or 'exit' to quit:");
+                System.out.println("\nEnter a Advising Query or type `exit` to exit: ");
                 String input = scanner.nextLine().trim();
                 
                 if (input.equalsIgnoreCase("exit")) {
@@ -85,7 +74,7 @@ public class McpClientExample {
                 try {                    
                     // Process and display the result
                     // Now pass the calculator result to the LLM for processing
-                    System.out.println("\nSending to LLM for analysis...");
+                    System.out.println("\nFacticulating...");
                     String promptToLLM;
                     
                      promptToLLM = String.format(input);
@@ -95,8 +84,7 @@ public class McpClientExample {
 
                     MockLLM.processInput(promptToLLM);
                     
-                } catch (NumberFormatException e) {
-                    System.out.println("Invalid numbers. Please enter valid numbers.");
+                
                 } catch (Exception e) {
                     System.out.println("Error: " + e.getMessage());
                     e.printStackTrace();

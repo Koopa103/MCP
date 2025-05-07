@@ -1,5 +1,5 @@
 # application.yml
-debug: true
+debug: false
 
 spring:
   profiles:
@@ -16,7 +16,7 @@ logging:
     org.springframework.web: DEBUG
     org.springframework.boot.autoconfigure: TRACE
     org.springframework.context.annotation: TRACE
-    your.package.name: TRACE
+    com.example.McpServerExample: TRACE
   file:
     name: logs/application.log
     

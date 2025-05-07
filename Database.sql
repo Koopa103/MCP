@@ -1566,11 +1566,10 @@ INSERT INTO coreq(course, prereq) VALUES ('ENGR442','ENGR423');
 
 
 
-insert into student_major(studentID, major) values (1,'CS');
+insert into student_major(studentID, major) values (90,'CS');
 insert into student_major(studentID, major) values (2,'IS');
 insert into student_major(studentID, major) values (3,'DET');
 insert into student_major(studentID, major) values (4,'BIBLE');
-insert into student_major(studentID, major) values (80, 'CS');
 insert into student_major(studentID, major) values (81, 'ART');
 insert into student_major(studentID, major) values (82, 'BBA');
 insert into student_major(studentID, major) values (83, 'CJ');
@@ -1579,7 +1578,6 @@ insert into student_major(studentID, major) values (85, 'EE');
 insert into student_major(studentID, major) values (86, 'PSYC');
 insert into student_major(studentID, major) values (87, 'BIO');
 insert into student_major(studentID, major) values (88, 'PSYC');
-insert into student_major(studentID, major) values (89, 'CS');
 -- select *from student_major;
 insert into student_major(studentID, major) values (1, 'ART');
 insert into student_major(studentID, major) values (2, 'ART');
