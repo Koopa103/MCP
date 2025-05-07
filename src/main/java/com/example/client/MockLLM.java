@@ -53,6 +53,7 @@ public class MockLLM {
     // AnthropicClient is thread-safe, so we can use a singleton
     private static AnthropicClientAsync client;
     private static McpSyncClient mcpClient;
+    private static String studentId;
 
     static {
 
@@ -60,6 +61,8 @@ public class MockLLM {
         // Initialize MCP client connection
         initializeMcpClient();
     }
+
+    
     
     /**
      * Initialize the MCP client connection to the server
@@ -77,6 +80,9 @@ public class MockLLM {
             // Initialize connection with the server
             System.out.println("Connecting to MCP server...");
             mcpClient.initialize();
+
+            System.out.println("What is your Student ID?: ");
+            studentId = System.console().readLine();
             
             // List available tools
             System.out.println("Available MCP tools:");
@@ -154,7 +160,8 @@ public class MockLLM {
                     .model(DEFAULT_MODEL)
                     .maxTokens(MAX_TOKENS)
                     .system("You are a College Student Advising Assistant" +
-                           "When given a question, you have access to a tool containing a collection of SQLite views that describe different advising options.")
+                           "When given a question, you have access to a tool containing a collection of SQLite views that describe different advising options."+
+                           "The student you are helping is student " + studentId)
                     .addUserMessage(input)
                     .tools(tools);
             
