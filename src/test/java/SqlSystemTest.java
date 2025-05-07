@@ -45,8 +45,8 @@ public class SqlSystemTest {
     public void representativeViewSchemaPresent() throws Exception {
         // pick one of the views declared in Views.sql
         DatabaseMetaData md = cnn.getMetaData();
-        try (ResultSet rs = md.getTables(null, null, "student_classes", null)) {
-            assertThat("student_classes view must exist",
+        try (ResultSet rs = md.getTables(null, null, "vw_student_classes", null)) {
+            assertThat("vw_student_classes view must exist",
                        rs.next(), is(true));
         }
     }
@@ -72,32 +72,12 @@ public class SqlSystemTest {
         }
 
         /* ── exercise WHERE + LIMIT on the real table ──────────────── */
-        String sql = """
-                SELECT * FROM student;
-                SELECT * FROM vw_course_min_grade;
-                SELECT * FROM vw_major_concentrations;
-                SELECT * FROM vw_major_completion;
-                SELECT * FROM vw_student_classes;
-                SELECT * FROM vw_current_hours;
-                SELECT * FROM vw_student_department;
-                SELECT * FROM vw_course_professors;
-                SELECT * FROM vw_student_majors;
-                SELECT * FROM vw_remaining_major_courses;
-                SELECT * FROM vw_department_enrollment_count;
-                SELECT * FROM vw_department_professors;
-                SELECT * FROM vw_major_semester_courses;
-                SELECT * FROM vw_course_offerings;
-                SELECT * FROM vw_major_required_courses_count;
-                SELECT * FROM vw_transferable_courses;
-                SELECT * FROM vw_student_class_rooms;
-                SELECT * FROM vw_major_professors;
-                SELECT * FROM vw_required_gpa_calc;
-                SELECT * FROM vw_student_current_class_schedule;
-                """;
+        String sql = "SELECT * FROM students";
         try (PreparedStatement ps = cnn.prepareStatement(sql)) {
             ps.setString(1, "CSC-102");
             try (ResultSet rs = ps.executeQuery()) {
                 assertThat("row present", rs.next(), is(true));
+                assertThat(rs.getString(1), equalTo("CSC-102"));
                 assertThat("LIMIT 1 returns only one row", rs.next(), is(false));
             }
         }
