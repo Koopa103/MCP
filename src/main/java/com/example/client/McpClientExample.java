@@ -74,10 +74,7 @@ public class McpClientExample {
                 try {                    
                     // Process and display the result
                     // Now pass the calculator result to the LLM for processing
-                    System.out.println("\nFacticulating...");
-                    String promptToLLM;
-                    
-                     promptToLLM = String.format(input);
+                    String promptToLLM = String.format(input);
  
                     // Call the MockLLM to process the result with Claude
                     // Make sure the input contains a mathematical expression to trigger the calculator
