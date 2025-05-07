@@ -2,7 +2,9 @@ package com.example;
  
 
 import java.util.List;
+import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.modelcontextprotocol.spec.McpSchema;
@@ -50,14 +52,24 @@ public class McpServerExample {
         var calculatorTool = new McpServerFeatures.SyncToolSpecification(
                 new Tool("calculator", "Performs basic arithmetic operations", schema),
                 (exchange, arguments) -> {
-                    String operation = (String) arguments.get("operation");
-                    double a = ((Number) arguments.get("a")).doubleValue();
-                    double b = ((Number) arguments.get("b")).doubleValue();
-                    
+                    System.out.println("OK SO THIS HAPPENS:   \n" + arguments.toString());
+
+                    ObjectMapper mapper = new ObjectMapper();
+                    JsonNode argumentTree = mapper.valueToTree(arguments);
+
+
+                    double a = argumentTree.path("input").path("a").asDouble();
+                    double b = argumentTree.path("input").path("b").asDouble();
+
+                    String operation = argumentTree.path("input").path("operation").asText();
+
                     double result;
+                    System.out.println("we get to reeee");
                     switch (operation.toLowerCase()) {
                         case "add":
                             result = a + b;
+                            System.out.println("RESULT:" + result);
+
                             break;
                         case "subtract":
                             result = a - b;
@@ -80,6 +92,7 @@ public class McpServerExample {
                     }
 
                     String response = String.format("Result of %s %s %s = %s", a, operation, b, result);
+                    System.out.println(response);
                     return new CallToolResult(
                             List.of(new TextContent(response)), 
                             false);

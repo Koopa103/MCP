@@ -5,8 +5,6 @@ import java.util.Scanner;
 
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.example.MockLLM;
-
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
@@ -92,15 +90,9 @@ public class McpClientExample {
                     
                      promptToLLM = String.format(input);
  
-                    
                     // Call the MockLLM to process the result with Claude
                     // Make sure the input contains a mathematical expression to trigger the calculator
-                    if (promptToLLM.contains("add") || 
-                        promptToLLM.contains("subtract") || 
-                        promptToLLM.contains("multiply") || 
-                        promptToLLM.contains("divide")) {
-                        System.out.println("Detected a math operation. Sending to Claude with calculator tool...");
-                    }
+
                     MockLLM.processInput(promptToLLM);
                     
                 } catch (NumberFormatException e) {

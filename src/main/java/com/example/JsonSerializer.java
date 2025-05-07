@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr353.JSR353Module;
 import com.anthropic.models.messages.ToolUseBlock;
 import javax.json.JsonValue;
+import com.anthropic.core.JsonField;
 
 public class JsonSerializer {
     public static String serializeToJson(String input) throws JsonProcessingException {
@@ -29,4 +30,5 @@ public class JsonSerializer {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(toolUseBlock);
     }
+
 }

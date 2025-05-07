@@ -125,6 +125,24 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.5.0</version>
       </plugin>
+
+      <plugin>
+				<artifactId>plantuml-generator-maven-plugin</artifactId>
+				<groupId>de.elnarion.maven</groupId>
+                <version>1.1.2</version>
+				<goals>
+					<goal>generate</goal>
+				</goals>
+				<configuration>
+					<outputFilename>testdiagram1.txt</outputFilename>
+                    <scanPackages>
+				<scanPackage>
+				    com.example
+				</scanPackage>
+			</scanPackages>
+			<blacklistRegexp>.*TestClass.*</blacklistRegexp>
+				</configuration>
+			</plugin>
       
 
       <plugin>
