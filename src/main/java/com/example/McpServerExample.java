@@ -109,12 +109,14 @@ public class McpServerExample {
                 .capabilities(ServerCapabilities.builder()
                   .resources(false, true)  // Resource support with list changes notifications
                   .tools(true)            // Tool support with list changes notifications
-                  .prompts(true)          // Prompt support with list changes notifications
-                  .logging().build())
+                  .prompts(true)
+                  .logging()     // Prompt support with list changes notifications
+                  .build())
                 .build();
 
         server.addTool(SqlViewToolServer.getTool());
         server.notifyToolsListChanged();
+        
         
         
         // Register the calculator tool

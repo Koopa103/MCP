@@ -59,6 +59,7 @@ public class MockLLM {
         // Initialize the client using API key from environment variable
         // Initialize MCP client connection
         initializeMcpClient();
+        
     }
     
     /**
@@ -71,12 +72,22 @@ public class MockLLM {
             McpClientTransport transport = new WebFluxSseClientTransport(webClientBuilder);
             
             mcpClient = McpClient.sync(transport)
-                    .requestTimeout(java.time.Duration.ofSeconds(30))
+            .loggingConsumer(notification -> {
+                System.out.println("Received log message: " + notification.data());
+            })
+            
+                    .requestTimeout(java.time.Duration.ofSeconds(2))
+                    
                     .build();
                     
             // Initialize connection with the server
            // System.out.println("Connecting to MCP server...");
-            mcpClient.initialize();
+
+           mcpClient.initialize();
+           mcpClient.setLoggingLevel(McpSchema.LoggingLevel.ERROR);
+
+
+            
             
             // List available tools
             //System.out.println("Available MCP tools:");
@@ -158,7 +169,6 @@ public class MockLLM {
             
             // Print initial response
             boolean hasToolUse = false;
-
             Message response = client.messages().create(createParams.build()).join();
             
            // System.out.println(response);
@@ -166,7 +176,6 @@ public class MockLLM {
             for (ContentBlock block : response.content()) {
                 if (block.isToolUse()) {
                     hasToolUse = true;
-
                     ToolBlock.handleToolUseBlock(block.asToolUse(), input, response,createParams,mcpClient,client);
                 } else if (block.isText()) {
                     // Print text content
@@ -176,8 +185,7 @@ public class MockLLM {
                 }
             }
             
-
-                            // Continue the conversation with tool results
+            // Continue the conversation with tool results
             Message finalResponse = client.messages().create(createParams.build()).get();
             finalResponse.content().stream()
             .flatMap(contentBlock -> contentBlock.text().stream())

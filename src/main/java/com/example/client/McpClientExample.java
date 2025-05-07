@@ -21,32 +21,12 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 public class McpClientExample {
 
     public static void main(String[] args) {
-        // Create WebClient for communicating with the server
-        WebClient.Builder webClientBuilder = WebClient.builder()
-                                        .baseUrl("http://localhost:8080");
-        McpClientTransport transport = new WebFluxSseClientTransport(webClientBuilder);
 
 
-        // Function<CreateMessageRequest, CreateMessageResult> samplingHandler = request -> {
-        //     // Sampling implementation that interfaces with LLM
-        //     return new CreateMessageResult(MockLLM.processInput(response));
-        // };
 
-
-        // Create and initialize the client
-        McpSyncClient client = McpClient.sync(transport).initializationTimeout(java.time.Duration.ofSeconds(30)).requestTimeout(java.time.Duration.ofSeconds(10))
-            .capabilities(ClientCapabilities.builder()
-                .roots(true)      // Enable roots capability
-                .sampling()
-                .build())
-            //.sampling(samplingHandler)
-            .build();
-                
         try {
             // Initialize connection with the server
-            // System.out.println("Connecting to MCP server...");
-            client.initialize();
-            
+  
             // List available tools
             // System.out.println("Available tools:");
             // McpSchema.ListToolsResult toolsResult = client.listTools();
@@ -95,7 +75,7 @@ public class McpClientExample {
             e.printStackTrace();
         } finally {
             // Close the client connection
-            client.closeGracefully();
+            
             System.out.println("Client disconnected.");
         }
     }
