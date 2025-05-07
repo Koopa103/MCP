@@ -1,5 +1,6 @@
 package com.example;
  
+import com.example.SqlViewToolServer;
 
 import java.util.List;
 import java.util.Map;
@@ -104,7 +105,7 @@ public class McpServerExample {
 
         McpSyncServer server = McpServer.sync(transportProvider)
         
-                .serverInfo("calculator-server", "1.8.0")
+                .serverInfo("SQL-COllege-Data", "1.8.0")
                 .capabilities(ServerCapabilities.builder()
                   .resources(false, true)  // Resource support with list changes notifications
                   .tools(true)            // Tool support with list changes notifications
@@ -112,7 +113,7 @@ public class McpServerExample {
                   .logging().build())
                 .build();
 
-        server.addTool(calculatorTool);
+        server.addTool(SqlViewToolServer.getTool());
         server.notifyToolsListChanged();
         
         

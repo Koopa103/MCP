@@ -48,7 +48,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public class MockLLM {
     private static final String DEFAULT_MODEL = "claude-3-7-sonnet-20250219";
-    private static final long MAX_TOKENS = 8192;
+    private static final long MAX_TOKENS = 2000L;
     
     // AnthropicClient is thread-safe, so we can use a singleton
     private static AnthropicClientAsync client;
@@ -153,8 +153,8 @@ public class MockLLM {
             MessageCreateParams.Builder createParams = MessageCreateParams.builder()
                     .model(DEFAULT_MODEL)
                     .maxTokens(MAX_TOKENS)
-                    .system("You are a calculator assistant that helps with math operations. " +
-                           "When given a mathematical expression, use the calculator tool to solve it.")
+                    .system("You are a College Student Advising Assistant" +
+                           "When given a question, you have access to a tool containing a collection of SQLite views that describe different advising options.")
                     .addUserMessage(input)
                     .tools(tools);
             
