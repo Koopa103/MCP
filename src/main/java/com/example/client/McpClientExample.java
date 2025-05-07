@@ -20,6 +20,7 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 
 public class McpClientExample {
 
+    public String studentID;
     public static void main(String[] args) {
         // Create WebClient for communicating with the server
         WebClient.Builder webClientBuilder = WebClient.builder()
@@ -60,6 +61,9 @@ public class McpClientExample {
             
             System.out.println("\n=== Better Wildcat Central bot ===");
 
+            System.out.println("What is your Student ID?: ");
+            String studentID = scanner.nextLine().trim();
+
             
             while (running) {
                 System.out.println("\nEnter a Advising Query or type `exit` to exit: ");
@@ -79,7 +83,7 @@ public class McpClientExample {
                     // Call the MockLLM to process the result with Claude
                     // Make sure the input contains a mathematical expression to trigger the calculator
 
-                    MockLLM.processInput(promptToLLM);
+                    MockLLM.processInput(promptToLLM, studentID);
                     
                 
                 } catch (Exception e) {

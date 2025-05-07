@@ -53,7 +53,6 @@ public class MockLLM {
     // AnthropicClient is thread-safe, so we can use a singleton
     private static AnthropicClientAsync client;
     private static McpSyncClient mcpClient;
-    private static String studentId;
 
     static {
 
@@ -80,9 +79,6 @@ public class MockLLM {
             // Initialize connection with the server
            // System.out.println("Connecting to MCP server...");
             mcpClient.initialize();
-
-            System.out.println("What is your Student ID?: ");
-            studentId = System.console().readLine();
             
             // List available tools
             //System.out.println("Available MCP tools:");
@@ -108,7 +104,7 @@ public class MockLLM {
      * 
      * @param input The text input to process
      */
-    public static void processInput(String input) {
+    public static void processInput(String input, String studentID) {
 
 
         String apiKey = System.getenv("ANTHROPIC_API_KEY");
@@ -144,21 +140,21 @@ public class MockLLM {
             }
         }
         
-        processWithTools(input, tools);
+        processWithTools(input, tools, studentID);
     }
     
     /**
      * Process input with the configured tools
      */
-    private static void processWithTools(String input, List<ToolUnion> tools) {
+    private static void processWithTools(String input, List<ToolUnion> tools, String studentID) {
         try {
             
             MessageCreateParams.Builder createParams = MessageCreateParams.builder()
                     .model(DEFAULT_MODEL)
                     .maxTokens(MAX_TOKENS)
                     .system("You are a College Student Advising Assistant" +
-                           "When given a question, you have access to a tool containing a collection of SQLite views that describe different advising options."+
-                           "The student you are helping is student " + studentId)
+                           "When given a question, you have access to a tool containing a collection of SQLite views that describe different advising options." +
+                           "The ID of the sudent you're helping is: " + studentID)
                     .addUserMessage(input)
                     .tools(tools);
             
