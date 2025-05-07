@@ -78,23 +78,23 @@ public class MockLLM {
                     .build();
                     
             // Initialize connection with the server
-            System.out.println("Connecting to MCP server...");
+           // System.out.println("Connecting to MCP server...");
             mcpClient.initialize();
 
             System.out.println("What is your Student ID?: ");
             studentId = System.console().readLine();
             
             // List available tools
-            System.out.println("Available MCP tools:");
-            McpSchema.ListToolsResult toolsResult = mcpClient.listTools();
-            toolsResult.tools().forEach(tool -> {
-                System.out.println("- " + tool.name() + ": " + tool.description());
-            });
+            //System.out.println("Available MCP tools:");
+            // McpSchema.ListToolsResult toolsResult = mcpClient.listTools();
+            // toolsResult.tools().forEach(tool -> {
+            //     System.out.println("- " + tool.name() + ": " + tool.description());
+            // });
             
             // Register shutdown hook to close the client connection
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 mcpClient.closeGracefully();
-                System.out.println("MCP Client disconnected.");
+               // System.out.println("MCP Client disconnected.");
             }));
         } catch (Exception e) {
             System.err.println("Error initializing MCP client: " + e.getMessage());
@@ -138,13 +138,11 @@ public class MockLLM {
                     tools.add(ToolUnion.ofTool(tool));
                 });
                 
-                System.out.println("Configured " + tools.size() + " tools for LLM");
+                //System.out.println("Configured " + tools.size() + " tools for LLM");
             } catch (Exception e) {
                 System.err.println("Error getting tools from MCP server: " + e.getMessage());
             }
         }
-
-
         
         processWithTools(input, tools);
     }
@@ -154,7 +152,6 @@ public class MockLLM {
      */
     private static void processWithTools(String input, List<ToolUnion> tools) {
         try {
-            System.out.println("Sending request to Claude with " + tools.size() + " tools...");
             
             MessageCreateParams.Builder createParams = MessageCreateParams.builder()
                     .model(DEFAULT_MODEL)
@@ -171,17 +168,16 @@ public class MockLLM {
 
             Message response = client.messages().create(createParams.build()).join();
             
-            System.out.println(response);
+           // System.out.println(response);
             // Check all content blocks
             for (ContentBlock block : response.content()) {
                 if (block.isToolUse()) {
                     hasToolUse = true;
-                    System.out.println("\nClaude wants to use a tool:" + input + response);
 
                     ToolBlock.handleToolUseBlock(block.asToolUse(), input, response,createParams,mcpClient,client);
                 } else if (block.isText()) {
                     // Print text content
-                    System.out.println((block).text());
+                    block.text().stream().forEach(textBlock -> System.out.println(textBlock.text()));
                 } else {
                     System.out.println("Unknown content type: " + block);
                 }
@@ -190,18 +186,10 @@ public class MockLLM {
 
                             // Continue the conversation with tool results
             Message finalResponse = client.messages().create(createParams.build()).get();
-            System.out.println(finalResponse);
+            finalResponse.content().stream()
+            .flatMap(contentBlock -> contentBlock.text().stream())
+            .forEach(textBlock -> System.out.println(textBlock.text()));
                 
-                            // Print final response from Claude
-            System.out.println("\nClaude's response after tool use:");
-            for (ContentBlock block : finalResponse.content()) {
-            if (block.isText()) {
-                System.out.println(block.text());
-            } else {
-                System.out.println(block);
-                }
-            }
-            
         } catch (Exception e) {
             System.err.println("Error calling Anthropic API: " + e.getMessage());
             e.printStackTrace();

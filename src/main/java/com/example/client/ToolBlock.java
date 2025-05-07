@@ -33,12 +33,10 @@ public class ToolBlock {
         String toolName = toolUseBlock.name();
         String toolInput = toolUseBlock.toString();
         String jsonString = "";
-        System.out.println("Tool: " + toolName);
-        System.out.println("Input: " + toolInput);
+
         try {
             // Example usage
             jsonString = JsonSerializer.convertToolUseBlockToJson(toolUseBlock);
-            System.out.println(jsonString);
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             }
@@ -51,7 +49,6 @@ public class ToolBlock {
                 CallToolRequest toolRequest = new CallToolRequest(toolName,jsonString);
                 
                 // Call the tool on the MCP server
-                System.out.println("Calling MCP tool: " + toolName);
                 CallToolResult toolResult = mcpClient.callTool(toolRequest);
                 
                 // Extract result text
@@ -60,7 +57,6 @@ public class ToolBlock {
                     resultText = ((TextContent) toolResult.content().get(0)).text();
                 }
                 
-                System.out.println("Tool result: " + resultText);
                 
                 // Continue the conversation with the tool result
                 
