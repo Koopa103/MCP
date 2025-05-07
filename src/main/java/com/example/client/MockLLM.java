@@ -61,6 +61,8 @@ public class MockLLM {
         initializeMcpClient();
         
     }
+
+    
     
     /**
      * Initialize the MCP client connection to the server
@@ -113,7 +115,7 @@ public class MockLLM {
      * 
      * @param input The text input to process
      */
-    public static void processInput(String input) {
+    public static void processInput(String input, String studentID) {
 
 
         String apiKey = System.getenv("ANTHROPIC_API_KEY");
@@ -149,20 +151,21 @@ public class MockLLM {
             }
         }
         
-        processWithTools(input, tools);
+        processWithTools(input, tools, studentID);
     }
     
     /**
      * Process input with the configured tools
      */
-    private static void processWithTools(String input, List<ToolUnion> tools) {
+    private static void processWithTools(String input, List<ToolUnion> tools, String studentID) {
         try {
             
             MessageCreateParams.Builder createParams = MessageCreateParams.builder()
                     .model(DEFAULT_MODEL)
                     .maxTokens(MAX_TOKENS)
                     .system("You are a College Student Advising Assistant" +
-                           "When given a question, you have access to a tool containing a collection of SQLite views that describe different advising options.")
+                           "When given a question, you have access to a tool containing a collection of SQLite views that describe different advising options." +
+                           "The ID of the sudent you're helping is: " + studentID)
                     .addUserMessage(input)
                     .tools(tools);
             

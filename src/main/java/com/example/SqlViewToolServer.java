@@ -17,6 +17,7 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import com.example.client.McpClientExample;
 
 /**
  * MCP server that exposes <em>one dedicated tool per SQL view</em> backed by
@@ -105,6 +106,7 @@ To make predictions about future course offerings not already in the system
 
 Parameters
 You're paramater is query. This is a SQL query to search the views. The query should be a valid SQL statement that can be executed against the database views.
+
 Available Views
 
 course_min_grade: Minimum passing grade required for each course. Table schema course_min_grade(course_id,course_name,minimum_required_grade).
