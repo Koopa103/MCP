@@ -2,7 +2,3 @@
 target/
 
 CLAUDE.md
-
-logs/application.log
-
-*.log
