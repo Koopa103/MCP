@@ -1,4 +1,4 @@
-package com.example;
+package com.example.server;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

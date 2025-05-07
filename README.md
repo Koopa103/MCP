@@ -17,7 +17,9 @@ mvn exec:java -Dexec.mainClass="com.example.client.McpClientExample"
 
 ```
 
+```
 
+```
 
 
 plantuml -svg target/generated-docs/project-diagram.puml

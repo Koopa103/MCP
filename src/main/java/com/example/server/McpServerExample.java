@@ -1,10 +1,9 @@
-package com.example;
+package com.example.server;
  
-import com.example.SqlViewToolServer;
-
 import java.util.List;
 import java.util.Map;
 
+import com.example.server.SqlViewToolServer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

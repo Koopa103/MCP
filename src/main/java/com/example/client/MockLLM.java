@@ -10,6 +10,7 @@ import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.Tool.InputSchema;
 import com.anthropic.models.messages.ToolResultBlockParam.Content;
+import com.example.server.JsonSerializer;
 import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.Tool;
 import com.anthropic.models.messages.ToolChoice;
@@ -29,7 +30,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
-import com.example.JsonSerializer;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import org.springframework.web.reactive.function.client.WebClient;

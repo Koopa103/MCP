@@ -1,4 +1,4 @@
-package com.example;
+package com.example.server;
 
 
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
