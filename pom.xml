@@ -20,6 +20,8 @@
 <properties>
 		<java.version>21</java.version>
 		<spring-ai.version>1.0.0-M7</spring-ai.version>
+    <exec.mainClass>com.example.McpWebServer</exec.mainClass>
+
 </properties>
 
 
@@ -130,25 +132,27 @@
 				<artifactId>plantuml-generator-maven-plugin</artifactId>
 				<groupId>de.elnarion.maven</groupId>
                 <version>1.1.2</version>
-				<goals>
-					<goal>generate</goal>
-				</goals>
-				<configuration>
-					<outputFilename>testdiagram1.txt</outputFilename>
-                    <scanPackages>
-				<scanPackage>
-				    com.example
-				</scanPackage>
-			</scanPackages>
-			<blacklistRegexp>.*TestClass.*</blacklistRegexp>
-				</configuration>
+ <executions>
+        <execution>
+            <id>generate-diagram</id>
+            <goals>
+                <goal>generate</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+                <outputFilename>project-diagram.puml</outputFilename>
+ <scanPackages>
+        <scanPackage>com.example</scanPackage>
+    </scanPackages>
+    <useCurrentClassloader>true</useCurrentClassloader>
+            </configuration>
+        </execution>
+    </executions>
 			</plugin>
-      
 
       <plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-        
 			</plugin>
       
     </plugins>
